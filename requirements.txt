@@ -1,0 +1,17 @@
+# Core libraries for video/audio processing
+moviepy
+gTTS
+
+# API clients and utilities
+google-api-python-client
+google-auth-oauthlib
+groq
+requests
+python-dotenv
+
+# LangChain/LangGraph for future agentic orchestration
+langchain
+langgraph
+
+# Vector database for knowledge base
+chromadb
