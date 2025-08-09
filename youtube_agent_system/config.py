@@ -46,7 +46,7 @@ VIDEO_FPS = 24
 
 # Text overlay settings
 TEXT_COLOR = "white"
-TEXT_FONT = "Helvetica-Bold" # A common font, might need to change based on system
+TEXT_FONT = r"C:\Windows\Fonts\arialbd.ttf" # A common font, might need to change based on system
 TEXT_FONT_SIZE = 70
 TEXT_STROKE_COLOR = "black"
 TEXT_STROKE_WIDTH = 2
