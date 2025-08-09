@@ -1,5 +1,5 @@
 import os
-from moviepy.editor import (
+from moviepy import (
     VideoFileClip, AudioFileClip, CompositeVideoClip, TextClip,
     concatenate_audioclips, CompositeAudioClip
 )
