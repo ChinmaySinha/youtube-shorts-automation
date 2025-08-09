@@ -44,7 +44,6 @@ def create_final_video(topic: str, background_video_path: str, audio_clips_info:
 
         # Trim or loop the background
         if resized_clip.duration > total_duration:
-            # .subclip() is a core method and should work directly
             video_adjusted = resized_clip.subclip(0, total_duration)
         else:
             # Apply Loop effect
@@ -57,19 +56,22 @@ def create_final_video(topic: str, background_video_path: str, audio_clips_info:
         for info in audio_clips_info:
             text = info['text']
             duration = info['duration']
+            
             text_clip = TextClip(
-                txt=text,
-                fontsize=config.TEXT_FONT_SIZE,
+                text=text,
+                font_size=config.TEXT_FONT_SIZE,
                 color=config.TEXT_COLOR,
                 font=config.TEXT_FONT,
                 stroke_color=config.TEXT_STROKE_COLOR,
                 stroke_width=config.TEXT_STROKE_WIDTH,
-                size=(video_adjusted.w * 0.8, None),
+                size=(int(video_adjusted.w * 0.8), None),
                 method='caption'
             )
-            text_clip = text_clip.set_position(config.TEXT_POSITION)
-            text_clip = text_clip.set_start(current_time)
-            text_clip = text_clip.set_duration(duration)
+            # Renamed all 'set_' methods to 'with_'
+            text_clip = text_clip.with_position(config.TEXT_POSITION)
+            text_clip = text_clip.with_start(current_time)
+            text_clip = text_clip.with_duration(duration)
+            
             subtitle_clips.append(text_clip)
             current_time += duration
             print(f"Created subtitle: '{text}' from {current_time-duration:.2f}s to {current_time:.2f}s")
