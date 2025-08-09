@@ -3,20 +3,15 @@ from moviepy import (
     VideoFileClip, AudioFileClip, CompositeVideoClip, TextClip,
     concatenate_audioclips,
 )
-from moviepy.video.fx import all as vfx
+# Correct imports for all class-based effects
+from moviepy.video.fx.Crop import Crop
+from moviepy.video.fx.Resize import Resize
+from moviepy.video.fx.Loop import Loop
 from .. import config
 
 def create_final_video(topic: str, background_video_path: str, audio_clips_info: list[dict]) -> str | None:
     """
     Assembles the final video by combining the background, audio, and text subtitles.
-
-    Args:
-        topic: The topic of the video, used for naming the final file.
-        background_video_path: Path to the downloaded background video.
-        audio_clips_info: A list of dictionaries with audio paths, durations, and text.
-
-    Returns:
-        The file path of the final rendered video, or None if an error occurs.
     """
     print("--- Assembling Final Video ---")
     if not audio_clips_info:
@@ -24,41 +19,44 @@ def create_final_video(topic: str, background_video_path: str, audio_clips_info:
         return None
 
     try:
-        # 1. Load background video and audio clips
+        # 1. Load assets
         background_clip = VideoFileClip(background_video_path)
         sentence_audio_clips = [AudioFileClip(info['audio_path']) for info in audio_clips_info]
 
-        # 2. Concatenate audio clips to get a single voiceover track
+        # 2. Concatenate audio
         voiceover_track = concatenate_audioclips(sentence_audio_clips)
         total_duration = voiceover_track.duration
 
-        # 3. Prepare background video to match voiceover duration
-        # Crop to 9:16 aspect ratio (e.g., for YouTube Shorts)
+        # 3. Prepare background video
         (w, h) = background_clip.size
         target_w, target_h = config.VIDEO_WIDTH, config.VIDEO_HEIGHT
-
-        # Crop the center of the clip to the target aspect ratio
+        
         crop_width = h * (target_w / target_h)
         x_center = w / 2
 
-        # Apply the crop effect using the new syntax for MoviePy v2.0
-        cropped_clip = background_clip.fx(vfx.crop, x_center=x_center, width=crop_width)
-        # Resize to the final output resolution
-        resized_clip = cropped_clip.resize(height=target_h)
+        # Apply Crop effect
+        crop_effect = Crop(x_center=x_center, width=crop_width)
+        cropped_clip = crop_effect.apply(background_clip)
+        
+        # Apply Resize effect
+        resize_effect = Resize(height=target_h)
+        resized_clip = resize_effect.apply(cropped_clip)
 
-        # Trim or loop the background to match the audio duration
+        # Trim or loop the background
         if resized_clip.duration > total_duration:
+            # .subclip() is a core method and should work directly
             video_adjusted = resized_clip.subclip(0, total_duration)
         else:
-            video_adjusted = resized_clip.loop(duration=total_duration)
+            # Apply Loop effect
+            loop_effect = Loop(duration=total_duration)
+            video_adjusted = loop_effect.apply(resized_clip)
 
-        # 4. Create timed text clips (subtitles)
+        # 4. Create subtitles
         subtitle_clips = []
         current_time = 0
         for info in audio_clips_info:
             text = info['text']
             duration = info['duration']
-
             text_clip = TextClip(
                 txt=text,
                 fontsize=config.TEXT_FONT_SIZE,
@@ -66,23 +64,21 @@ def create_final_video(topic: str, background_video_path: str, audio_clips_info:
                 font=config.TEXT_FONT,
                 stroke_color=config.TEXT_STROKE_COLOR,
                 stroke_width=config.TEXT_STROKE_WIDTH,
-                size=(video_adjusted.w*0.8, None), # 80% of video width
-                method='caption' # Wraps text automatically
+                size=(video_adjusted.w * 0.8, None),
+                method='caption'
             )
-
             text_clip = text_clip.set_position(config.TEXT_POSITION)
             text_clip = text_clip.set_start(current_time)
             text_clip = text_clip.set_duration(duration)
-
             subtitle_clips.append(text_clip)
             current_time += duration
             print(f"Created subtitle: '{text}' from {current_time-duration:.2f}s to {current_time:.2f}s")
 
-        # 5. Composite everything together
+        # 5. Composite final video
         final_clip = CompositeVideoClip([video_adjusted] + subtitle_clips)
         final_clip.audio = voiceover_track
 
-        # 6. Write the final video file
+        # 6. Write to file
         sanitized_topic = topic.replace(' ', '_')
         output_filename = f"final_video_{sanitized_topic}.mp4"
         output_path = os.path.join(config.ASSETS_DIR, output_filename)
@@ -96,7 +92,7 @@ def create_final_video(topic: str, background_video_path: str, audio_clips_info:
         )
         print("--- Video rendering complete! ---")
 
-        # Close clips to release memory
+        # 7. Close clips
         background_clip.close()
         for clip in sentence_audio_clips:
             clip.close()
@@ -112,7 +108,5 @@ def create_final_video(topic: str, background_video_path: str, audio_clips_info:
         return None
 
 if __name__ == '__main__':
-    # This is a complex module, direct testing is tricky without assets.
-    # It's better to test this via the production_agent.
     print("This module is intended to be called from production_agent.py")
     print("It requires pre-existing video and audio assets to function.")
