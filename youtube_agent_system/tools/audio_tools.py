@@ -1,7 +1,7 @@
 import os
 import re
 from gtts import gTTS
-from moviepy.editor import AudioFileClip
+from moviepy import AudioFileClip
 from .. import config
 
 def text_to_speech_sentences(script: str, topic: str) -> list[dict]:
