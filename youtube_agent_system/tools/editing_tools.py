@@ -1,8 +1,9 @@
 import os
 from moviepy import (
     VideoFileClip, AudioFileClip, CompositeVideoClip, TextClip,
-    concatenate_audioclips, CompositeAudioClip
+    concatenate_audioclips,
 )
+from moviepy.video.fx import all as vfx
 from .. import config
 
 def create_final_video(topic: str, background_video_path: str, audio_clips_info: list[dict]) -> str | None:
@@ -39,9 +40,9 @@ def create_final_video(topic: str, background_video_path: str, audio_clips_info:
         # Crop the center of the clip to the target aspect ratio
         crop_width = h * (target_w / target_h)
         x_center = w / 2
-        y_center = h / 2
 
-        cropped_clip = background_clip.crop(x_center=x_center, width=crop_width)
+        # Apply the crop effect using the new syntax for MoviePy v2.0
+        cropped_clip = background_clip.fx(vfx.crop, x_center=x_center, width=crop_width)
         # Resize to the final output resolution
         resized_clip = cropped_clip.resize(height=target_h)
 
