@@ -36,8 +36,33 @@ os.makedirs(ASSETS_DIR, exist_ok=True)
 
 # --- Content & Production Settings ---
 
-# Default topic if none is provided
+# List of predefined Reddit-style story topics.
+# The system will use these when it cannot find new topics from rivals.
+STATIC_TOPIC_POOL = [
+    "AITA for exposing my cheating ex-girlfriend to her entire family at her wedding?",
+    "My entitled boss stole my work and took credit, so I got pro revenge by deleting the master files.",
+    "AITA for refusing to give up my first-class seat for a newlywed couple on their honeymoon?",
+    "My roommate kept eating my food, so I made the spiciest chili in the world as revenge.",
+    "AITA for telling my parents I won't pay for my sister's college after they spent my tuition fund?",
+]
+
+# List of rival YouTube video URLs to scan for new topic ideas.
+# More can be added here.
+RIVAL_VIDEO_URLS = [
+    "https://www.youtube.com/watch?v=s600FYgI5-s",
+]
+
+# Default topic if none is provided (fallback)
 DEFAULT_TOPIC = "the story of a forgotten lighthouse keeper"
+
+# Search queries for background gameplay footage.
+# The system will randomly pick one of these for each video.
+GAMEPLAY_QUERIES = [
+    "minecraft parkour",
+    "gta v gameplay",
+    "satisfying compilation",
+    "racing simulator",
+]
 
 # Video settings
 VIDEO_WIDTH = 1080

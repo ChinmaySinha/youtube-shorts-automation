@@ -15,3 +15,6 @@ langgraph
 
 # Vector database for knowledge base
 chromadb
+
+# YouTube metadata scraping
+yt-dlp

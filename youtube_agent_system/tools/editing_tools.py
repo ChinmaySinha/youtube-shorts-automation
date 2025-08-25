@@ -3,7 +3,6 @@ from moviepy.editor import (
     VideoFileClip, AudioFileClip, CompositeVideoClip, TextClip,
     concatenate_audioclips
 )
-from moviepy.video.fx.all import crop, resize, loop
 from .. import config
 
 def create_final_video(topic: str, background_video_path: str, audio_clips_info: list[dict]) -> str | None:
@@ -12,73 +11,71 @@ def create_final_video(topic: str, background_video_path: str, audio_clips_info:
     """
     print("--- Assembling Final Video ---")
     if not audio_clips_info:
+        print("Error: No audio clips provided to create video.")
         return None
 
     try:
-        # 1. Load assets
+        # 1. Load background video and audio clips
         background_clip = VideoFileClip(background_video_path)
         sentence_audio_clips = [AudioFileClip(info['audio_path']) for info in audio_clips_info]
 
-        # 2. Concatenate audio
+        # 2. Concatenate audio clips to get a single voiceover track
         voiceover_track = concatenate_audioclips(sentence_audio_clips)
         total_duration = voiceover_track.duration
 
-        # 3. Prepare background video with robust cropping and resizing
-        source_w, source_h = background_clip.size
-        source_ratio = float(source_w) / source_h
-
+        # 3. Prepare background video to match voiceover duration
+        # Crop to 9:16 aspect ratio (e.g., for YouTube Shorts)
+        (w, h) = background_clip.size
         target_w, target_h = config.VIDEO_WIDTH, config.VIDEO_HEIGHT
-        target_ratio = float(target_w) / target_h
 
-        # This logic correctly handles both portrait and landscape source videos
-        if source_ratio > target_ratio:
-            # Source video is wider than target (e.g., landscape source for portrait target)
-            # We crop the width to match the target aspect ratio
-            new_width = int(source_h * target_ratio)
-            cropped_clip = crop(background_clip, width=new_width, x_center=source_w/2)
-        else:
-            # Source video is taller than target (e.g., portrait source for portrait target)
-            # We crop the height to match the target aspect ratio
-            new_height = int(source_w / target_ratio)
-            cropped_clip = crop(background_clip, height=new_height, y_center=source_h/2)
-        
-        # Resize the now correctly-proportioned clip to the final target dimensions
-        resized_clip = resize(cropped_clip, newsize=(target_w, target_h))
+        # Crop the center of the clip to the target aspect ratio
+        crop_width = h * (target_w / target_h)
+        x_center = w / 2
 
+        # Use the .crop() method compatible with moviepy v1.x
+        cropped_clip = background_clip.crop(x_center=x_center, width=crop_width)
+        # Resize to the final output resolution
+        resized_clip = cropped_clip.resize(height=target_h)
 
+        # Trim or loop the background to match the audio duration
         if resized_clip.duration > total_duration:
             video_adjusted = resized_clip.subclip(0, total_duration)
         else:
-            video_adjusted = loop(resized_clip, duration=total_duration)
+            video_adjusted = resized_clip.loop(duration=total_duration)
 
-        # 4. Create subtitles
+        # 4. Create timed text clips (subtitles)
         subtitle_clips = []
         current_time = 0
         for info in audio_clips_info:
             text = info['text']
             duration = info['duration']
-            
+
+            # Use the v1.x syntax for TextClip
             text_clip = TextClip(
-                text,
+                txt=text,
                 fontsize=config.TEXT_FONT_SIZE,
                 color=config.TEXT_COLOR,
                 font=config.TEXT_FONT,
                 stroke_color=config.TEXT_STROKE_COLOR,
                 stroke_width=config.TEXT_STROKE_WIDTH,
-                size=(int(video_adjusted.w * 0.9), None), # Use 90% of width for text
+                size=(video_adjusted.w*0.8, None),
                 method='caption'
             )
-            text_clip = text_clip.set_pos(config.TEXT_POSITION).set_start(current_time).set_duration(duration)
-            
+
+            # Use the .set_* methods compatible with v1.x
+            text_clip = text_clip.set_position(config.TEXT_POSITION)
+            text_clip = text_clip.set_start(current_time)
+            text_clip = text_clip.set_duration(duration)
+
             subtitle_clips.append(text_clip)
             current_time += duration
             print(f"Created subtitle: '{text}' from {current_time-duration:.2f}s to {current_time:.2f}s")
 
-        # 5. Composite final video
+        # 5. Composite everything together
         final_clip = CompositeVideoClip([video_adjusted] + subtitle_clips)
         final_clip.audio = voiceover_track
 
-        # 6. Write to file
+        # 6. Write the final video file
         sanitized_topic = topic.replace(' ', '_')
         output_filename = f"final_video_{sanitized_topic}.mp4"
         output_path = os.path.join(config.ASSETS_DIR, output_filename)
@@ -92,7 +89,7 @@ def create_final_video(topic: str, background_video_path: str, audio_clips_info:
         )
         print("--- Video rendering complete! ---")
 
-        # 7. Close clips
+        # Close clips to release memory
         background_clip.close()
         for clip in sentence_audio_clips:
             clip.close()

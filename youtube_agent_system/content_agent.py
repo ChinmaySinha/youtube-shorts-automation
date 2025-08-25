@@ -22,26 +22,27 @@ def generate_story_script(topic: str) -> str:
 
     client = Groq(api_key=config.GROQ_API_KEY)
 
-    # This prompt is engineered based on the principles in the blueprint.
-    # It sets a persona, provides clear instructions, and includes negative constraints.
+    # This prompt is engineered for creating Reddit-style stories (AITA, ProRevenge, etc.).
+    # It instructs the LLM to adopt a first-person, dramatic, and conversational tone.
     prompt = f"""
-    You are a master storyteller, known for crafting short, deeply engaging, and emotionally resonant narratives.
-    Your task is to write a story based on the following topic: "{topic}".
+    You are a skilled writer who specializes in adapting dramatic Reddit titles into compelling, first-person stories.
+    Your task is to take the following title and write a full story from the perspective of the person who posted it.
 
-    **Instructions & Constraints:**
-    1.  **Narrative Arc:** The story must have a clear beginning, a rising action, a climax, and a brief, impactful resolution.
-    2.  **Show, Don't Tell:** Do not state emotions directly (e.g., "he was sad"). Instead, describe actions, thoughts, and dialogue that convey the emotion (e.g., "his shoulders slumped, the world a grey blur").
-    3.  **Sentence Structure:** Vary your sentence structure. Use a mix of short, punchy sentences for impact and longer, descriptive sentences for setting the scene.
-    4.  **Word Count:** The entire story should be between 150 and 250 words. This is for a short video.
-    5.  **Tone:** The tone should be slightly melancholic but hopeful.
+    **Title:** "{topic}"
+
+    **Instructions:**
+    1.  **First-Person Narrative:** Write the entire story from the "I" perspective. The narrator is the protagonist.
+    2.  **Story Structure:** The story needs a clear beginning that sets the scene (the setup), a middle that details the main conflict, and an end that provides a satisfying resolution or conclusion (the payoff or revenge).
+    3.  **Conversational Tone:** Write in a natural, conversational style, as if someone is genuinely sharing their experience online.
+    4.  **Word Count:** The story should be between 200 and 300 words, suitable for a short video script.
+    5.  **Dramatic and Engaging:** Build suspense and emotion. Make the characters' motivations clear and the conflict compelling.
 
     **Negative Constraints (What to AVOID):**
-    -   Do not use clichés or overused phrases (e.g., "in the nick of time," "a storm was brewing," "their eyes widened in surprise").
-    -   Do not start the story with "Once upon a time."
-    -   Do not end the story with a cheesy moral or a summary of the events. Let the story speak for itself.
-    -   Do not use filler words or sentences that don't advance the plot or develop the character.
+    -   Do not write a summary. Write the full story.
+    -   Do not be preachy or moralistic. Let the events speak for themselves.
+    -   Do not use generic filler phrases like "for some context" or "long story short". Integrate the details naturally.
 
-    Begin the story now.
+    Now, write the story based on the title.
     """
 
     try:

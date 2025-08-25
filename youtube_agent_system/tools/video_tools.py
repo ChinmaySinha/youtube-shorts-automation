@@ -1,13 +1,14 @@
 import os
 import requests
+import random
 from .. import config
 
-def get_background_video(topic: str) -> str | None:
+def get_background_video() -> str | None:
     """
-    Finds and downloads a suitable background video from Pexels.
+    Finds and downloads a suitable background gameplay video from Pexels.
 
-    Args:
-        topic: The topic to search for.
+    This function now ignores the story topic and randomly selects a gameplay
+    query from the list in config.py to ensure a consistent visual style.
 
     Returns:
         The file path of the downloaded video, or None if an error occurs.
@@ -16,7 +17,9 @@ def get_background_video(topic: str) -> str | None:
         print("Error: PEXELS_API_KEY is not configured in the .env file.")
         return None
 
-    print(f"--- Searching for background video on Pexels with topic: {topic} ---")
+    # Randomly select a gameplay query
+    gameplay_query = random.choice(config.GAMEPLAY_QUERIES)
+    print(f"--- Searching for background video on Pexels with query: '{gameplay_query}' ---")
 
     headers = {
         "Authorization": config.PEXELS_API_KEY
@@ -24,9 +27,9 @@ def get_background_video(topic: str) -> str | None:
 
     # Search for vertically oriented videos to match the 9:16 short format
     query_params = {
-        "query": topic,
+        "query": gameplay_query,
         "orientation": "portrait",
-        "per_page": 5,
+        "per_page": 15, # Search more results to find a longer video
         "size": "medium" # small, medium, large
     }
 

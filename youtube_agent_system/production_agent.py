@@ -24,8 +24,8 @@ def create_video_from_script(topic: str, script: str) -> str | None:
         print("Production failed: Could not generate audio.")
         return None
 
-    # Step 2: Get a background video based on the topic
-    background_video_path = video_tools.get_background_video(topic)
+    # Step 2: Get a background video
+    background_video_path = video_tools.get_background_video()
     if not background_video_path:
         print("Production failed: Could not retrieve background video.")
         return None
