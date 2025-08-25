@@ -1,5 +1,5 @@
 # Core libraries for video/audio processing
-moviepy
+moviepy==1.0.3
 gTTS
 
 # API clients and utilities
