@@ -16,9 +16,15 @@ PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
 # The client secrets file is needed for OAuth 2.0
 YOUTUBE_CLIENT_SECRETS_FILE = "client_secrets.json"
 # The scopes define the permissions the app will request
-YOUTUBE_SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+YOUTUBE_SCOPES = [
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/yt-analytics.readonly",
+    "https://www.googleapis.com/auth/youtube.readonly"
+]
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
+YT_ANALYTICS_API_SERVICE_NAME = "youtubeAnalytics"
+YT_ANALYTICS_API_VERSION = "v2"
 
 
 # --- Project Structure & File Paths ---

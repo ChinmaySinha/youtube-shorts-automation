@@ -109,3 +109,52 @@ if __name__ == '__main__':
         print("Successfully authenticated with YouTube.")
     else:
         print("Failed to authenticate with YouTube.")
+
+def get_video_analytics(video_id: str) -> dict | None:
+    """
+    Fetches key performance indicators for a specific YouTube video.
+    """
+    # Note: The YouTube Analytics API takes about 24-48 hours to process data.
+    # Calling this on a newly uploaded video will likely return no data.
+    print(f"--- Fetching analytics for video ID: {video_id} ---")
+    try:
+        # We need a separate service object for the Analytics API
+        analytics = build(
+            config.YT_ANALYTICS_API_SERVICE_NAME,
+            config.YT_ANALYTICS_API_VERSION,
+            credentials=get_youtube_service().credentials # Reuse credentials
+        )
+
+        # Get today's date in the required format
+        from datetime import datetime, timedelta
+        today = datetime.utcnow().date()
+        start_date = (today - timedelta(days=30)).strftime('%Y-%m-%d') # Look back 30 days
+        end_date = today.strftime('%Y-%m-%d')
+
+        request = analytics.reports().query(
+            ids='channel==MINE',
+            startDate=start_date,
+            endDate=end_date,
+            metrics='views,likes,averageViewDuration',
+            dimensions='video',
+            filters=f'video=={video_id}'
+        )
+        response = request.execute()
+
+        if response and 'rows' in response and response['rows']:
+            # The API returns a list of rows, even for one video
+            stats = response['rows'][0]
+            analytics_data = {
+                'views': stats[1],
+                'likes': stats[2],
+                'average_view_duration': stats[3]
+            }
+            print(f"Analytics found: {analytics_data}")
+            return analytics_data
+        else:
+            print("No analytics data found for this video yet. This is normal for new videos.")
+            return None
+
+    except Exception as e:
+        print(f"An error occurred during YouTube analytics fetch: {e}")
+        return None

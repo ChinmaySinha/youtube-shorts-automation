@@ -93,3 +93,41 @@ if __name__ == '__main__':
     print(f"--- Running Publishing Test for topic: '{test_topic}' ---")
     # Ensure you have a .env file with GROQ_API_KEY and client_secrets.json
     publish_video(dummy_video_path, test_topic)
+
+def update_video_metadata(video_id: str, new_title: str, new_description: str):
+    """
+    (Placeholder for A/B Testing) Updates the metadata of an existing video.
+
+    This function demonstrates how you could implement A/B testing. For example,
+    you could call this after 24 hours to change the title and see if it
+    improves click-through rate.
+    """
+    print(f"--- (A/B Testing Groundwork) Updating metadata for video {video_id} ---")
+
+    try:
+        youtube = youtube_tools.get_youtube_service()
+        if not youtube:
+            print("Could not get YouTube service. Aborting update.")
+            return
+
+        # First, get the existing video snippet to preserve other fields
+        request = youtube.videos().list(part="snippet,status", id=video_id)
+        response = request.execute()
+
+        if not response.get("items"):
+            print(f"Video with ID {video_id} not found.")
+            return
+
+        video_data = response["items"][0]
+        video_data["snippet"]["title"] = new_title
+        video_data["snippet"]["description"] = new_description
+
+        update_request = youtube.videos().update(
+            part="snippet",
+            body=video_data
+        )
+        update_request.execute()
+        print(f"Successfully updated video {video_id} with new title: '{new_title}'")
+
+    except Exception as e:
+        print(f"An error occurred during video metadata update: {e}")

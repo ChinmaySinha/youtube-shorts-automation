@@ -1,60 +1,66 @@
-# --- Phase 2 & 3: The Intelligence Layer ---
-# This file will house the AnalyticsAgent.
-
-# This agent closes the autonomous loop. Its responsibilities are:
-# 1. On a schedule, query the YouTube Analytics API for performance data
-#    on recently published videos.
-# 2. Focus on key metrics like CTR, average view duration, and subscriber gain.
-# 3. Process this data to find correlations between content attributes (e.g., topic,
-#    tone, length) and audience engagement.
-# 4. Write these structured insights to the StrategyAgent's knowledge base.
-
 from . import knowledge_base
-# from .tools import youtube_tools # Would use a new function for analytics
+from .tools import youtube_tools
 
-def analyze_video_performance(video_id: str) -> str:
+def analyze_video_performance(video_id: str, topic: str) -> str | None:
     """
-    Gathers and analyzes performance data for a given video.
+    Gathers and analyzes performance data for a given video, then saves it.
+
+    This function embodies the AnalyticsAgent's role. It gets stats,
+    formats them into an "insight", and saves that insight to the knowledge base.
 
     Args:
         video_id: The ID of the YouTube video to analyze.
+        topic: The original topic/title of the video.
 
     Returns:
-        A structured string of feedback for the StrategyAgent.
+        A structured string of feedback, or None if no data is found.
     """
-    print(f"--- AnalyticsAgent (Not Implemented) for video: {video_id} ---")
+    print(f"--- 🔎 Analytics Agent: Analyzing video '{topic}' (ID: {video_id}) ---")
 
-    # In Phase 2/3, this would be the logic:
-    # 1. Call a new function in youtube_tools to get analytics for the video_id.
-    #    stats = youtube_tools.get_video_analytics(video_id)
-    #    # e.g., stats = {'ctr': 0.05, 'avg_duration': 45}
-    #
-    # 2. Correlate stats with video attributes (which would be stored in the knowledge base).
-    #    video_attributes = knowledge_base.get_attributes_for_video(video_id)
-    #    # e.g., video_attributes = {'topic': 'lighthouses', 'tone': 'melancholy'}
-    #
-    # 3. Generate a structured insight.
-    #    insight = f"Video on topic '{video_attributes['topic']}' had a CTR of {stats['ctr']*100}%."
-    #
-    # 4. Save the insight to the knowledge base for future strategy.
-    #    knowledge_base.save_insight(insight)
-    #
-    # 5. Return the insight to the supervisor for immediate use.
-    #    return insight
+    # 1. Get analytics data from the YouTube tool
+    stats = youtube_tools.get_video_analytics(video_id)
 
-    # For now, it returns a placeholder feedback string.
-    feedback = f"Placeholder feedback for video {video_id}: Analysis shows the topic was engaging."
-    print(feedback)
+    if not stats:
+        print("No analytics data returned. Cannot generate insight.")
+        return None
 
-    # This insight would be stored for the StrategyAgent's next run.
+    # 2. Format the data into a structured insight string.
+    # This string format is designed to be easily understood by both humans and an LLM.
+    insight = (
+        f"Performance insight for video with topic '{topic}': "
+        f"Achieved {stats['views']} views and {stats['likes']} likes. "
+        f"Average view duration was {stats['average_view_duration']} seconds."
+    )
+    print(f"Generated Insight: {insight}")
+
+    # 3. Save the generated insight to the knowledge base for future use.
+    # We use the video_id as the unique identifier for the document.
     knowledge_base.save_insight(
         video_id=video_id,
-        insight="High engagement detected, suggesting similar topics may perform well."
+        insight=insight,
+        metadata={
+            "topic": topic,
+            "views": int(stats['views']),
+            "likes": int(stats['likes']),
+            "avg_duration_seconds": int(stats['average_view_duration'])
+        }
     )
 
-    return feedback
+    return insight
 
 if __name__ == '__main__':
     # Example of how this agent would be triggered.
-    test_video_id = "dQw4w9WgXcQ" # A famous video ID
-    analyze_video_performance(test_video_id)
+    # Note: This requires a REAL video ID from your channel that has analytics data.
+    # Using a random one will likely return no data.
+    # Replace with a real ID from your channel to test.
+    test_video_id = "s600FYgI5-s" # Using the rival's video ID as a stand-in for testing
+    test_topic = "My Entitled Boss Stole My Work, So I Got Pro Revenge"
+
+    insight_result = analyze_video_performance(test_video_id, test_topic)
+
+    if insight_result:
+        print("\n--- Agent Finished ---")
+        print(f"Analysis complete. Insight was generated and saved.")
+    else:
+        print("\n--- Agent Finished ---")
+        print("Agent ran, but no analytics data was available to generate an insight.")
