@@ -72,7 +72,7 @@ def upload_video_to_youtube(video_path: str, title: str, description: str, tags:
                 "categoryId": "22" # "People & Blogs". Change if needed. See https://developers.google.com/youtube/v3/docs/videoCategories/list
             },
             "status": {
-                "privacyStatus": "private" # 'private', 'public', or 'unlisted'
+                "privacyStatus": "public" # 'private', 'public', or 'unlisted'
             }
         }
 
