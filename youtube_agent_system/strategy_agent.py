@@ -4,121 +4,110 @@ from . import config
 from .tools import rival_scanner
 from . import knowledge_base
 
-# A simple in-memory set to keep track of topics we've already produced.
-# In a real system, this would be stored in a persistent database.
-__processed_topics = set()
-
-def _get_new_rival_topics() -> list[str]:
-    """Scans rival URLs and returns any new, unprocessed video titles."""
-    print("--- Strategy Agent: Scanning rival channels for new topics ---")
-    new_topics = []
-    for url in config.RIVAL_VIDEO_URLS:
-        title = rival_scanner.get_video_title(url)
-        if title and title not in __processed_topics:
-            new_topics.append(title)
-    if not new_topics:
-        print("No new topics found from rival channels.")
-    return new_topics
-
-def _generate_new_topics_from_insights() -> list[str]:
+def generate_optimized_script() -> dict | None:
     """
-    Uses an LLM to generate new topic ideas based on past performance.
+    Generates a new, optimized script by synthesizing multiple data sources.
+
+    This is the new "brain" of the operation. It gathers intel, constructs
+    a "master prompt", and uses an LLM to generate a complete script and title.
+
+    Returns:
+        A dictionary containing the 'script' and 'title', or None on failure.
     """
-    print("--- Strategy Agent: Generating new topics from past performance ---")
-    all_insights = knowledge_base.get_all_insights()
+    print("--- 🤔 Advanced Strategy Agent (v3): Generating optimized script... ---")
 
-    if not all_insights:
-        print("No past insights found in the knowledge base. Cannot generate new topics.")
-        return []
+    # 1. Gather all data sources
+    our_insights = knowledge_base.get_all_insights()
 
-    client = Groq(api_key=config.GROQ_API_KEY)
+    rival_intel = []
+    for channel_url in config.RIVAL_CHANNEL_URLS:
+        channel_intel = rival_scanner.get_channel_shorts_info(channel_url, playlist_end=5)
+        if channel_intel:
+            rival_intel.extend(channel_intel)
 
-    # We combine all insights into a single context block for the LLM
-    insights_context = "\n".join(all_insights)
+    # Sort rival intel by views to find the best performers
+    rival_intel.sort(key=lambda x: x['views'], reverse=True)
 
-    prompt = f"""
-    You are a brilliant YouTube content strategist. Your goal is to come up with new, viral video ideas.
-    You will be given a summary of the performance of past videos. Based on this data, you need to generate a list of 5 new, original Reddit-style video titles that are likely to perform well.
+    # 2. Construct the Master Prompt
+    # Start building the context for the LLM
+    prompt_context = "Here is the performance of our past videos:\n"
+    if our_insights:
+        prompt_context += "\n".join(our_insights)
+    else:
+        prompt_context += "No data from our past videos is available yet.\n"
 
-    **Past Performance Data:**
-    {insights_context}
+    prompt_context += "\n\nHere are the top-performing recent videos from a rival channel:\n"
+    if rival_intel:
+        for video in rival_intel[:3]: # Use top 3 for brevity
+            prompt_context += f"- Title: {video['title']} ({video['views']} views)\n"
+    else:
+        prompt_context += "No data from rival channels is available.\n"
+
+    prompt_context += "\nOur general content style is similar to these topics:\n"
+    prompt_context += "\n".join(f"- {topic}" for topic in config.STATIC_TOPIC_POOL[:2])
+
+
+    # The final prompt that asks the LLM to perform the synthesis
+    master_prompt = f"""
+    You are an expert YouTube content strategist and scriptwriter for a viral 'Reddit Stories' channel.
+    Your task is to synthesize all of the provided data to create one new, viral video script.
+
+    **[CONTEXT]**
+    {prompt_context}
+    **[END CONTEXT]**
 
     **Your Task:**
-    Analyze the performance data above. Identify what makes a video successful (e.g., topics about revenge, family drama, workplace conflicts).
-    Generate a list of 5 new, clickable, and dramatic video titles in the style of "AITA for..." or "My entitled...".
-    The titles should be creative and original, not just copies of past successes.
+    1.  **Analyze:** Briefly analyze the context above. What topics (e.g., revenge, family drama, workplace conflicts) and title structures are working well for both us and our rivals?
+    2.  **Synthesize & Generate:** Based on your analysis, create a single, new, original story idea that you predict will go viral.
+    3.  **Write Script:** Write the complete, ready-to-produce script for this new story. The script must be 200-300 words and written in a compelling, first-person narrative style.
+    4.  **Provide Title:** At the very end of your response, on a completely new line, provide a compelling and clickable title for this new story. The title must be prefixed with "Title: ".
 
-    **Output Format:**
-    Return the list as a numbered list, with each title on a new line. For example:
-    1. AITA for telling my sister her destination wedding was a tacky gift grab?
-    2. My landlord tried to evict me illegally, so I used his own rules to bankrupt him.
-    3. ...
+    Generate the script now.
     """
 
+    # 3. Call the LLM
     try:
+        client = Groq(api_key=config.GROQ_API_KEY)
         chat_completion = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="llama3-8b-8192",
-            temperature=0.9, # Higher temperature for more creative ideas
+            messages=[{"role": "user", "content": master_prompt}],
+            model="llama3-70b-8192", # Using a more powerful model for this complex task
+            temperature=0.8,
         )
-        response_text = chat_completion.choices[0].message.content
+        response_text = chat_completion.choices[0].message.content.strip()
 
-        # Parse the numbered list response from the LLM
-        new_topics = [line.split('. ', 1)[1] for line in response_text.strip().split('\n') if '. ' in line]
-        print(f"Generated {len(new_topics)} new data-driven topics.")
-        return new_topics
+        # 4. Parse the output
+        if "Title:" in response_text:
+            parts = response_text.rsplit("\nTitle:", 1)
+            script = parts[0].strip()
+            title = parts[1].strip()
+
+            print(f"--- Strategy Agent successfully generated new content! ---")
+            print(f"Title: {title}")
+            # print(f"Script: {script[:100]}...") # Uncomment for debugging
+
+            return {"script": script, "title": title}
+        else:
+            # Fallback if the model doesn't follow the format perfectly
+            print("Warning: LLM did not provide a title in the expected format. Using the full response as script.")
+            return {"script": response_text, "title": "AI Generated Story"}
+
     except Exception as e:
-        print(f"Error generating new topics from LLM: {e}")
-        return []
-
-
-def decide_content_topic() -> str:
-    """
-    Decides on the next video topic using a learning, multi-tiered strategy.
-    """
-    print("--- 🤔 Strategy Agent (v2): Deciding next topic... ---")
-
-    # Priority 1: Generate new topics from past performance
-    generated_topics = _generate_new_topics_from_insights()
-    # Filter out any we might have already processed
-    available_generated_topics = [t for t in generated_topics if t not in __processed_topics]
-    if available_generated_topics:
-        next_topic = random.choice(available_generated_topics)
-        print(f"Data-driven topic selected: '{next_topic}'")
-        __processed_topics.add(next_topic)
-        return next_topic
-
-    # Priority 2: Get a new topic from a rival channel
-    rival_topics = _get_new_rival_topics()
-    if rival_topics:
-        next_topic = rival_topics[0]
-        print(f"New rival topic selected: '{next_topic}'")
-        __processed_topics.add(next_topic)
-        return next_topic
-
-    # Priority 3: Get an unused topic from our static pool
-    print("Falling back to static topic pool.")
-    available_static_topics = [t for t in config.STATIC_TOPIC_POOL if t not in __processed_topics]
-    if available_static_topics:
-        next_topic = random.choice(available_static_topics)
-        print(f"Static topic selected: '{next_topic}'")
-        __processed_topics.add(next_topic)
-        return next_topic
-
-    # Priority 4: Final fallback
-    print("All topic pools exhausted. Using default fallback topic.")
-    return config.DEFAULT_TOPIC
+        print(f"An error occurred calling the LLM in StrategyAgent: {e}")
+        return None
 
 if __name__ == '__main__':
-    # This test requires some pre-existing data in the knowledge base
-    print("--- Testing Strategy Agent v2 ---")
-    # Let's add a dummy insight to simulate a past success
+    # This test requires a bit of setup (a dummy insight) to work well.
+    print("--- Testing Advanced Strategy Agent ---")
     knowledge_base.save_insight(
-        "dummy_id_1",
-        "Video 'Pro revenge on my boss' was highly successful with 100k views.",
-        {"topic": "Pro revenge on my boss", "views": 100000}
+        "dummy_id_test",
+        "Video 'AITA for leaving my own party' performed well with 25k views.",
+        {"topic": "AITA for leaving my own party", "views": 25000}
     )
 
-    next_topic = decide_content_topic()
-    print(f"\n--- Decision ---")
-    print(f"The next video topic will be: {next_topic}")
+    result = generate_optimized_script()
+    if result:
+        print("\n--- Generation Complete ---")
+        print(f"Title: {result['title']}")
+        print(f"Script preview: {result['script'][:150]}...")
+    else:
+        print("\n--- Generation Failed ---")

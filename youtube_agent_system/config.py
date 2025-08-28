@@ -52,10 +52,10 @@ STATIC_TOPIC_POOL = [
     "AITA for telling my parents I won't pay for my sister's college after they spent my tuition fund?",
 ]
 
-# List of rival YouTube video URLs to scan for new topic ideas.
+# List of rival YouTube channel URLs to scan for new topic ideas.
 # More can be added here.
-RIVAL_VIDEO_URLS = [
-    "https://www.youtube.com/watch?v=s600FYgI5-s",
+RIVAL_CHANNEL_URLS = [
+    "https://www.youtube.com/@Broken.Stories",
 ]
 
 # Default topic if none is provided (fallback)
