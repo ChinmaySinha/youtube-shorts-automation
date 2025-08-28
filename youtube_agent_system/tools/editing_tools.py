@@ -5,95 +5,97 @@ from moviepy.editor import (
 )
 from .. import config
 
-def create_final_video(topic: str, background_video_path: str, audio_clips_info: list[dict]) -> str | None:
+def create_final_video(
+    title: str,
+    background_video_path: str,
+    story_audio_clips_info: list[dict],
+    title_audio_clip_info: dict
+) -> str | None:
     """
-    Assembles the final video by combining the background, audio, and text subtitles.
+    Assembles the final video, now with a title reveal at the start.
     """
-    print("--- Assembling Final Video ---")
-    if not audio_clips_info:
-        print("Error: No audio clips provided to create video.")
+    print("--- Assembling Final Video (with Title Reveal) ---")
+    if not story_audio_clips_info or not title_audio_clip_info:
+        print("Error: Missing audio clips to create video.")
         return None
 
     try:
-        # 1. Load background video and audio clips
+        # --- 1. Load all audio assets ---
+        title_audio_clip = AudioFileClip(title_audio_clip_info['audio_path'])
+        story_audio_clips = [AudioFileClip(info['audio_path']) for info in story_audio_clips_info]
+
+        # --- 2. Create the full voiceover track (Title + Story) ---
+        full_voiceover_track = concatenate_audioclips([title_audio_clip] + story_audio_clips)
+        total_duration = full_voiceover_track.duration
+
+        # --- 3. Prepare background video ---
         background_clip = VideoFileClip(background_video_path)
-        sentence_audio_clips = [AudioFileClip(info['audio_path']) for info in audio_clips_info]
-
-        # 2. Concatenate audio clips to get a single voiceover track
-        voiceover_track = concatenate_audioclips(sentence_audio_clips)
-        total_duration = voiceover_track.duration
-
-        # 3. Prepare background video to match voiceover duration
-        # Crop to 9:16 aspect ratio (e.g., for YouTube Shorts)
-        (w, h) = background_clip.size
-        target_w, target_h = config.VIDEO_WIDTH, config.VIDEO_HEIGHT
-
-        # Crop the center of the clip to the target aspect ratio
-        crop_width = h * (target_w / target_h)
-        x_center = w / 2
-
-        # Use the .crop() method compatible with moviepy v1.x
-        cropped_clip = background_clip.crop(x_center=x_center, width=crop_width)
-        # Resize to the final output resolution
-        resized_clip = cropped_clip.resize(height=target_h)
-
-        # Trim or loop the background to match the audio duration
-        if resized_clip.duration > total_duration:
-            video_adjusted = resized_clip.subclip(0, total_duration)
+        # Trim or loop background to match the total new duration
+        if background_clip.duration > total_duration:
+            video_adjusted = background_clip.subclip(0, total_duration)
         else:
-            video_adjusted = resized_clip.loop(duration=total_duration)
+            video_adjusted = background_clip.loop(duration=total_duration)
 
-        # 4. Create timed text clips (subtitles)
-        subtitle_clips = []
-        current_time = 0
-        for info in audio_clips_info:
-            text = info['text']
-            duration = info['duration']
+        # Crop to 9:16 aspect ratio
+        (w, h) = video_adjusted.size
+        target_w, target_h = config.VIDEO_WIDTH, config.VIDEO_HEIGHT
+        crop_width = h * (target_w / target_h)
+        cropped_clip = video_adjusted.crop(x_center=w/2, width=crop_width)
+        final_background = cropped_clip.resize(height=target_h)
 
-            # Use the v1.x syntax for TextClip
+        # --- 4. Create all text clips (Title + Subtitles) ---
+        all_text_clips = []
+
+        # Create the title text clip
+        title_text_clip = TextClip(
+            txt=title,
+            fontsize=config.TEXT_FONT_SIZE,
+            color=config.TEXT_COLOR,
+            font=config.TEXT_FONT,
+            stroke_color=config.TEXT_STROKE_COLOR,
+            stroke_width=config.TEXT_STROKE_WIDTH,
+            size=(final_background.w * 0.9, None), # Title can be wider
+            method='caption'
+        )
+        title_text_clip = title_text_clip.set_position('center').set_start(0).set_duration(title_audio_clip.duration)
+        all_text_clips.append(title_text_clip)
+
+        # Create the story subtitle clips
+        current_time = title_audio_clip.duration # Start subtitles after the title audio
+        for info in story_audio_clips_info:
             text_clip = TextClip(
-                txt=text,
+                txt=info['text'],
                 fontsize=config.TEXT_FONT_SIZE,
                 color=config.TEXT_COLOR,
                 font=config.TEXT_FONT,
                 stroke_color=config.TEXT_STROKE_COLOR,
                 stroke_width=config.TEXT_STROKE_WIDTH,
-                size=(video_adjusted.w*0.8, None),
+                size=(final_background.w * 0.8, None),
                 method='caption'
             )
+            text_clip = text_clip.set_position('center').set_start(current_time).set_duration(info['duration'])
+            all_text_clips.append(text_clip)
+            current_time += info['duration']
 
-            # Use the .set_* methods compatible with v1.x
-            text_clip = text_clip.set_position(config.TEXT_POSITION)
-            text_clip = text_clip.set_start(current_time)
-            text_clip = text_clip.set_duration(duration)
+        # --- 5. Composite everything ---
+        final_clip = CompositeVideoClip([final_background] + all_text_clips)
+        final_clip.audio = full_voiceover_track
 
-            subtitle_clips.append(text_clip)
-            current_time += duration
-            print(f"Created subtitle: '{text}' from {current_time-duration:.2f}s to {current_time:.2f}s")
-
-        # 5. Composite everything together
-        final_clip = CompositeVideoClip([video_adjusted] + subtitle_clips)
-        final_clip.audio = voiceover_track
-
-        # 6. Write the final video file
-        sanitized_topic = topic.replace(' ', '_')
+        # --- 6. Write to file ---
+        sanitized_topic = title.replace(' ', '_')[:50] # Shorten for file name
         output_filename = f"final_video_{sanitized_topic}.mp4"
         output_path = os.path.join(config.ASSETS_DIR, output_filename)
 
         print(f"--- Rendering final video to {output_path} ---")
-        final_clip.write_videofile(
-            output_path,
-            codec='libx264',
-            audio_codec='aac',
-            fps=config.VIDEO_FPS
-        )
+        final_clip.write_videofile(output_path, codec='libx264', audio_codec='aac', fps=config.VIDEO_FPS)
         print("--- Video rendering complete! ---")
 
-        # Close clips to release memory
-        background_clip.close()
-        for clip in sentence_audio_clips:
+        # --- 7. Clean up ---
+        title_audio_clip.close()
+        for clip in story_audio_clips:
             clip.close()
-        voiceover_track.close()
+        full_voiceover_track.close()
+        background_clip.close()
         final_clip.close()
 
         return output_path
@@ -103,7 +105,3 @@ def create_final_video(topic: str, background_video_path: str, audio_clips_info:
         import traceback
         traceback.print_exc()
         return None
-
-if __name__ == '__main__':
-    print("This module is intended to be called from production_agent.py")
-    print("It requires pre-existing video and audio assets to function.")

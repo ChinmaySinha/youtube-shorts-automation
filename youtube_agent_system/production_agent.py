@@ -1,41 +1,50 @@
 from .tools import audio_tools, video_tools, editing_tools
 
-def create_video_from_script(topic: str, script: str) -> str | None:
+def create_video_from_script(title: str, script: str) -> str | None:
     """
-    Orchestrates the entire video production pipeline.
+    Orchestrates the entire video production pipeline, now with a title reveal.
 
-    This function embodies the ProductionAgent. It takes a topic and a script,
-    then uses the various tools to generate audio, source video, and
-    assemble the final product.
+    This function embodies the ProductionAgent. It takes a title and a script,
+    then uses the various tools to generate audio for both, source a video,
+    and assemble the final product.
 
     Args:
-        topic: The central topic of the video.
+        title: The title of the video.
         script: The narrative script for the video.
 
     Returns:
         The file path of the final rendered video, or None if any step fails.
     """
-    print("--- 🎬 Production Agent Initialized 🎬 ---")
+    print("--- 🎬 Production Agent Initialized (with Title Reveal) 🎬 ---")
 
-    # Step 1: Generate audio from the script
-    # This returns a list of dictionaries with audio paths, durations, and text
-    audio_clips_info = audio_tools.text_to_speech_sentences(script, topic)
-    if not audio_clips_info:
-        print("Production failed: Could not generate audio.")
+    # --- Audio Generation ---
+    # Step 1a: Generate audio for the main story script
+    story_audio_clips_info = audio_tools.text_to_speech_sentences(script, title)
+    if not story_audio_clips_info:
+        print("Production failed: Could not generate story audio.")
         return None
 
+    # Step 1b: Generate a single audio clip for the title
+    # We treat the title as a single sentence.
+    title_audio_info = audio_tools.text_to_speech_sentences(title, f"{title}_title")
+    if not title_audio_info:
+        print("Production failed: Could not generate title audio.")
+        return None
+
+    # --- Visual Sourcing ---
     # Step 2: Get a background video
     background_video_path = video_tools.get_background_video()
     if not background_video_path:
         print("Production failed: Could not retrieve background video.")
         return None
 
-    # Step 3: Assemble the final video
-    # This combines the video, audio, and subtitles
+    # --- Video Assembly ---
+    # Step 3: Assemble the final video, now passing the title info as well
     final_video_path = editing_tools.create_final_video(
-        topic,
-        background_video_path,
-        audio_clips_info
+        title=title,
+        background_video_path=background_video_path,
+        story_audio_clips_info=story_audio_clips_info,
+        title_audio_clip_info=title_audio_info[0] # It's a list with one item
     )
 
     if not final_video_path:
@@ -48,13 +57,11 @@ def create_video_from_script(topic: str, script: str) -> str | None:
 
 if __name__ == '__main__':
     # To test this agent, we need a script first.
-    # Let's use the content_agent to generate one.
     from . import content_agent
 
-    test_topic = "a single leaf in a storm"
+    test_topic = "AITA for swapping my sister's wedding cake with a foam replica?"
     print(f"--- Running Full Production Test for topic: '{test_topic}' ---")
 
-    # Ensure you have a .env file with GROQ_API_KEY and PEXELS_API_KEY
     test_script = content_agent.generate_story_script(test_topic)
 
     if "Error:" not in test_script:

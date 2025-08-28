@@ -57,9 +57,9 @@ def generate_optimized_script() -> dict | None:
     **[END CONTEXT]**
 
     **Your Task:**
-    1.  **Analyze:** Briefly analyze the context above. What topics (e.g., revenge, family drama, workplace conflicts) and title structures are working well for both us and our rivals?
-    2.  **Synthesize & Generate:** Based on your analysis, create a single, new, original story idea that you predict will go viral.
-    3.  **Write Script:** Write the complete, ready-to-produce script for this new story. The script must be 200-300 words and written in a compelling, first-person narrative style.
+    1.  **Analyze:** Briefly analyze the context above.
+    2.  **Synthesize & Generate:** Based on your analysis, create a single, new, original story idea.
+    3.  **Write Script:** Write the complete, ready-to-produce script for this new story. The script must be 200-300 words and written in a compelling, first-person narrative style. **You must begin the script with the marker `**Script:**`.**
     4.  **Provide Title:** At the very end of your response, on a completely new line, provide a compelling and clickable title for this new story. The title must be prefixed with "Title: ".
 
     Generate the script now.
@@ -70,26 +70,26 @@ def generate_optimized_script() -> dict | None:
         client = Groq(api_key=config.GROQ_API_KEY)
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": master_prompt}],
-            model="llama3-70b-8192", # Using a more powerful model for this complex task
+            model="llama3-70b-8192",
             temperature=0.8,
         )
 
-        # Add a safety check to ensure the LLM returned a response
         if not chat_completion.choices:
             print("Error: The AI model returned an empty response.")
             return None
 
         response_text = chat_completion.choices[0].message.content.strip()
 
-        # 4. Parse the output
-        if "Title:" in response_text:
-            parts = response_text.rsplit("\nTitle:", 1)
-            script = parts[0].strip()
-            title = parts[1].strip()
+        # 4. More robustly parse the output
+        if "**Script:**" in response_text and "Title:" in response_text:
+            # Extract the script that comes after the marker
+            script_part = response_text.split("**Script:**", 1)[1]
+            # From that part, extract the title
+            script = script_part.rsplit("\nTitle:", 1)[0].strip()
+            title = response_text.rsplit("\nTitle:", 1)[1].strip()
 
             print(f"--- Strategy Agent successfully generated new content! ---")
             print(f"Title: {title}")
-            # print(f"Script: {script[:100]}...") # Uncomment for debugging
 
             return {"script": script, "title": title}
         else:
