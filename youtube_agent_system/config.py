@@ -70,6 +70,11 @@ GAMEPLAY_QUERIES = [
     "racing simulator",
 ]
 
+# Path to a local video file to use as a fallback if Pexels API fails.
+# Leave as an empty string "" to not use a fallback.
+# Example: r"C:\Users\YourUser\Videos\my_gameplay.mp4"
+LOCAL_VIDEO_FALLBACK_PATH = ""
+
 # Video settings
 VIDEO_WIDTH = 1080
 VIDEO_HEIGHT = 1920 # 9:16 aspect ratio for shorts
