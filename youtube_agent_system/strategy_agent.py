@@ -73,6 +73,12 @@ def generate_optimized_script() -> dict | None:
             model="llama3-70b-8192", # Using a more powerful model for this complex task
             temperature=0.8,
         )
+
+        # Add a safety check to ensure the LLM returned a response
+        if not chat_completion.choices:
+            print("Error: The AI model returned an empty response.")
+            return None
+
         response_text = chat_completion.choices[0].message.content.strip()
 
         # 4. Parse the output
