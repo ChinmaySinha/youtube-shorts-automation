@@ -29,7 +29,6 @@ def generate_optimized_script() -> dict | None:
     rival_intel.sort(key=lambda x: x['views'], reverse=True)
 
     # 2. Construct the Master Prompt
-    # Start building the context for the LLM
     prompt_context = "Here is the performance of our past videos:\n"
     if our_insights:
         prompt_context += "\n".join(our_insights)
@@ -47,7 +46,6 @@ def generate_optimized_script() -> dict | None:
     prompt_context += "\n".join(f"- {topic}" for topic in config.STATIC_TOPIC_POOL[:2])
 
 
-    # The final prompt that asks the LLM to perform the synthesis
     master_prompt = f"""
     You are an expert YouTube content strategist and scriptwriter for a viral 'Reddit Stories' channel.
     Your task is to synthesize all of the provided data to create one new, viral video script.
@@ -74,6 +72,7 @@ def generate_optimized_script() -> dict | None:
             temperature=0.8,
         )
 
+        # CRITICAL FIX: Add a safety check to ensure the LLM returned a response
         if not chat_completion.choices:
             print("Error: The AI model returned an empty response.")
             return None
@@ -82,9 +81,7 @@ def generate_optimized_script() -> dict | None:
 
         # 4. More robustly parse the output
         if "**Script:**" in response_text and "Title:" in response_text:
-            # Extract the script that comes after the marker
             script_part = response_text.split("**Script:**", 1)[1]
-            # From that part, extract the title
             script = script_part.rsplit("\nTitle:", 1)[0].strip()
             title = response_text.rsplit("\nTitle:", 1)[1].strip()
 
@@ -93,7 +90,6 @@ def generate_optimized_script() -> dict | None:
 
             return {"script": script, "title": title}
         else:
-            # Fallback if the model doesn't follow the format perfectly
             print("Warning: LLM did not provide a title in the expected format. Using the full response as script.")
             return {"script": response_text, "title": "AI Generated Story"}
 
@@ -102,7 +98,6 @@ def generate_optimized_script() -> dict | None:
         return None
 
 if __name__ == '__main__':
-    # This test requires a bit of setup (a dummy insight) to work well.
     print("--- Testing Advanced Strategy Agent ---")
     knowledge_base.save_insight(
         "dummy_id_test",
