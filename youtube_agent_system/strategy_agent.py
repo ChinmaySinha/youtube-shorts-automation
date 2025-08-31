@@ -68,7 +68,7 @@ def generate_optimized_script() -> dict | None:
         client = Groq(api_key=config.GROQ_API_KEY)
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": master_prompt}],
-            model="llama-3.3-70b-versatile",
+            model="qwen/qwen3-32b",
             temperature=0.8,
         )
 
@@ -94,7 +94,11 @@ def generate_optimized_script() -> dict | None:
             return {"script": response_text, "title": "AI Generated Story"}
 
     except Exception as e:
+        import traceback
         print(f"An error occurred calling the LLM in StrategyAgent: {e}")
+        print("--- FULL TRACEBACK ---")
+        traceback.print_exc()
+        print("----------------------")
         return None
 
 if __name__ == '__main__':
