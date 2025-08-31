@@ -49,7 +49,7 @@ def text_to_speech_sentences(script: str, topic: str) -> list[dict]:
             # You can change the voice and model to whatever you prefer from the service
             audio = generate(
                 text=sentence,
-                voice="JBFqnCBsd6RMkjVDRZzb",  # <-- Your custom Voice ID has been added here
+                voice="JBFqnCBsd6RMkjVDRZzb",  # Your custom Voice ID
                 model="eleven_multilingual_v2"
             )
             

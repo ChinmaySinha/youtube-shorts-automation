@@ -76,7 +76,7 @@ GAMEPLAY_QUERIES = [
 # Path to a local video file to use as a fallback if Pexels API fails.
 # Leave as an empty string "" to not use a fallback.
 # Example: r"C:\Users\YourUser\Videos\my_gameplay.mp4"
-LOCAL_VIDEO_FALLBACK_PATH = ""
+LOCAL_VIDEO_FALLBACK_PATH = r"youtube_agent_system\Minecraft Parkour Gameplay NO COPYRIGHT (Vertical) - Orbital - No Copyright Gameplay (1080p, h264).mp4"
 
 # Video settings
 VIDEO_WIDTH = 1080
@@ -84,11 +84,11 @@ VIDEO_HEIGHT = 1920 # 9:16 aspect ratio for shorts
 VIDEO_FPS = 24
 
 # Text overlay settings
-TEXT_COLOR = "yellow" # Changed from "white" to "yellow"
-TEXT_FONT = r"C:\Windows\Fonts\LuckiestGuy-Regular.ttf" # Changed to the new font
-TEXT_FONT_SIZE = 80 # Increased for a bolder look
-TEXT_STROKE_COLOR = "black" # This is already correct
-TEXT_STROKE_WIDTH = 5 # Increased from 2 to 5 for a thick outline
+TEXT_COLOR = "yellow"
+TEXT_FONT = r"C:\Windows\Fonts\LuckiestGuy-Regular.ttf"
+TEXT_FONT_SIZE = 80
+TEXT_STROKE_COLOR = "black"
+TEXT_STROKE_WIDTH = 5
 TEXT_POSITION = ("center", "center")
 
 # Voiceover settings

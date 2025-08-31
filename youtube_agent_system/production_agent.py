@@ -34,9 +34,7 @@ def create_video_from_script(title: str, script: str) -> str | None:
     # --- Visual Sourcing ---
     # Step 2: Get a background video
     #background_video_path = video_tools.get_background_video()
-    
     background_video_path = r"youtube_agent_system\Minecraft Parkour Gameplay NO COPYRIGHT (Vertical) - Orbital - No Copyright Gameplay (1080p, h264).mp4"
-    
     if not background_video_path:
         print("Production failed: Could not retrieve background video.")
         return None

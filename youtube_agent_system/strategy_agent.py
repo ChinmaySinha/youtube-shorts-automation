@@ -1,8 +1,9 @@
 import random
+import re # <-- Make sure this import is at the top of the file
 from groq import Groq
 from . import config
 from .tools import rival_scanner
-from . import knowledge_base # <-- ADD THIS LINE
+from . import knowledge_base
 
 def generate_optimized_script() -> dict | None:
     """
@@ -82,24 +83,25 @@ def generate_optimized_script() -> dict | None:
         script = ""
         title = ""
 
-        if "**Script:**" in response_text:
-            # Isolate content after the script marker
-            potential_content = response_text.split("**Script:**", 1)[1]
-
+        # Use regex to find the script, ignoring variations like "Script:" or "**Script:**"
+        script_match = re.search(r'\*\*?Script:\*\*?(.*)', response_text, re.DOTALL | re.IGNORECASE)
+        
+        if script_match:
+            potential_content = script_match.group(1).strip()
+            
             if "\nTitle:" in potential_content:
                 parts = potential_content.rsplit("\nTitle:", 1)
                 script = parts[0].strip()
                 title = parts[1].strip()
             else:
-                # Fallback if title is missing: use the whole block as script and generate a title
+                # Fallback if title is missing
                 print("Warning: LLM response did not contain 'Title:' marker. Using a fallback title.")
-                script = potential_content.strip()
-                # Use the first full sentence as a fallback title, up to 100 chars
+                script = potential_content
                 fallback_title = script.split('.')[0]
                 title = (fallback_title[:100] + '..') if len(fallback_title) > 100 else fallback_title
         else:
             # Final fallback if no markers are found at all
-            print("Warning: LLM response did not contain any expected markers. Using full response as script.")
+            print("Warning: LLM response did not contain any script markers. Using full response as script.")
             script = response_text
             title = "AI Generated Story"
 
