@@ -84,11 +84,11 @@ VIDEO_HEIGHT = 1920 # 9:16 aspect ratio for shorts
 VIDEO_FPS = 24
 
 # Text overlay settings
-TEXT_COLOR = "white"
-TEXT_FONT = r"C:\Windows\Fonts\arialbd.ttf" # A common font, might need to change based on system
-TEXT_FONT_SIZE = 70
-TEXT_STROKE_COLOR = "black"
-TEXT_STROKE_WIDTH = 2
+TEXT_COLOR = "yellow" # Changed from "white" to "yellow"
+TEXT_FONT = r"C:\Windows\Fonts\LuckiestGuy-Regular.ttf" # Changed to the new font
+TEXT_FONT_SIZE = 80 # Increased for a bolder look
+TEXT_STROKE_COLOR = "black" # This is already correct
+TEXT_STROKE_WIDTH = 5 # Increased from 2 to 5 for a thick outline
 TEXT_POSITION = ("center", "center")
 
 # Voiceover settings
