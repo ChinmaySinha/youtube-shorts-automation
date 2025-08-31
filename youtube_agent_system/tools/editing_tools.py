@@ -1,4 +1,5 @@
 import os
+import re # Make sure to import the 're' module
 from moviepy.editor import (
     VideoFileClip, AudioFileClip, CompositeVideoClip, TextClip,
     concatenate_audioclips
@@ -82,8 +83,10 @@ def create_final_video(
         final_clip.audio = full_voiceover_track
 
         # --- 6. Write to file ---
-        sanitized_topic = title.replace(' ', '_')[:50] # Shorten for file name
-        output_filename = f"final_video_{sanitized_topic}.mp4"
+        # Robustly sanitize the title to create a safe filename
+        safe_title = re.sub(r'[<>:"/\\|?*]', '', title) # Remove illegal characters
+        safe_title = safe_title.replace(' ', '_')[:50] # Replace spaces and shorten
+        output_filename = f"final_video_{safe_title}.mp4"
         output_path = os.path.join(config.ASSETS_DIR, output_filename)
 
         print(f"--- Rendering final video to {output_path} ---")

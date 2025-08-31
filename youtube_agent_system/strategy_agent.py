@@ -2,7 +2,7 @@ import random
 from groq import Groq
 from . import config
 from .tools import rival_scanner
-from . import knowledge_base
+from . import knowledge_base # <-- ADD THIS LINE
 
 def generate_optimized_script() -> dict | None:
     """
@@ -72,7 +72,6 @@ def generate_optimized_script() -> dict | None:
             temperature=0.8,
         )
 
-        # CRITICAL FIX: Add a safety check to ensure the LLM returned a response
         if not chat_completion.choices:
             print("Error: The AI model returned an empty response.")
             return None
@@ -80,29 +79,34 @@ def generate_optimized_script() -> dict | None:
         response_text = chat_completion.choices[0].message.content.strip()
 
         # 4. Final robust parsing logic
+        script = ""
+        title = ""
+
         if "**Script:**" in response_text:
-            # Isolate the part that should contain the script and title
+            # Isolate content after the script marker
             potential_content = response_text.split("**Script:**", 1)[1]
 
-            # Check if the title marker also exists
             if "\nTitle:" in potential_content:
                 parts = potential_content.rsplit("\nTitle:", 1)
                 script = parts[0].strip()
                 title = parts[1].strip()
             else:
-                # Fallback if title is missing: use the whole block as script
+                # Fallback if title is missing: use the whole block as script and generate a title
                 print("Warning: LLM response did not contain 'Title:' marker. Using a fallback title.")
                 script = potential_content.strip()
-                title = script.split('.')[0] # Use the first sentence as a fallback title
-
-            print(f"--- Strategy Agent successfully generated new content! ---")
-            print(f"Title: {title}")
-
-            return {"script": script, "title": title}
+                # Use the first full sentence as a fallback title, up to 100 chars
+                fallback_title = script.split('.')[0]
+                title = (fallback_title[:100] + '..') if len(fallback_title) > 100 else fallback_title
         else:
             # Final fallback if no markers are found at all
             print("Warning: LLM response did not contain any expected markers. Using full response as script.")
-            return {"script": response_text, "title": "AI Generated Story"}
+            script = response_text
+            title = "AI Generated Story"
+
+        print(f"--- Strategy Agent successfully generated new content! ---")
+        print(f"Title: {title}")
+
+        return {"script": script, "title": title}
 
     except Exception as e:
         import traceback

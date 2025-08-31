@@ -12,6 +12,9 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 # Pexels API for Stock Videos
 PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
 
+# ElevenLabs API for High-Quality TTS
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+
 # YouTube Data API v3
 # The client secrets file is needed for OAuth 2.0
 YOUTUBE_CLIENT_SECRETS_FILE = "client_secrets.json"

@@ -33,7 +33,7 @@ def generate_story_script(topic: str) -> str:
     **Instructions:**
     1.  **First-Person Narrative:** Write the entire story from the "I" perspective. The narrator is the protagonist.
     2.  **Story Structure:** The story needs a clear beginning that sets the scene (the setup), a middle that details the main conflict, and an end that provides a satisfying resolution or conclusion (the payoff or revenge).
-    3.  **Conversational Tone:** Write in a natural, conversational style, as if someone is genuinely sharing their experience online.
+    3.  **Conversational Tone:** Write in a natural, conversational style, as if someone is genuinely sharing their experience online. Use contractions (like "I'm" or "don't"), rhetorical questions, and natural pauses (using ellipses... or em-dashes—) to make the delivery feel more authentic.
     4.  **Word Count:** The story should be between 200 and 300 words, suitable for a short video script.
     5.  **Dramatic and Engaging:** Build suspense and emotion. Make the characters' motivations clear and the conflict compelling.
 
