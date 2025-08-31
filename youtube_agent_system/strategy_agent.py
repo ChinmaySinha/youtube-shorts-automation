@@ -70,7 +70,7 @@ def generate_optimized_script() -> dict | None:
         client = Groq(api_key=config.GROQ_API_KEY)
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": master_prompt}],
-            model="llama3-70b-8192",
+            model="llama-3.3-70b-versatile",
             temperature=0.8,
         )
 
