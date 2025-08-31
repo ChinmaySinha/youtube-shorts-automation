@@ -79,18 +79,29 @@ def generate_optimized_script() -> dict | None:
 
         response_text = chat_completion.choices[0].message.content.strip()
 
-        # 4. More robustly parse the output
-        if "**Script:**" in response_text and "Title:" in response_text:
-            script_part = response_text.split("**Script:**", 1)[1]
-            script = script_part.rsplit("\nTitle:", 1)[0].strip()
-            title = response_text.rsplit("\nTitle:", 1)[1].strip()
+        # 4. Final robust parsing logic
+        if "**Script:**" in response_text:
+            # Isolate the part that should contain the script and title
+            potential_content = response_text.split("**Script:**", 1)[1]
+
+            # Check if the title marker also exists
+            if "\nTitle:" in potential_content:
+                parts = potential_content.rsplit("\nTitle:", 1)
+                script = parts[0].strip()
+                title = parts[1].strip()
+            else:
+                # Fallback if title is missing: use the whole block as script
+                print("Warning: LLM response did not contain 'Title:' marker. Using a fallback title.")
+                script = potential_content.strip()
+                title = script.split('.')[0] # Use the first sentence as a fallback title
 
             print(f"--- Strategy Agent successfully generated new content! ---")
             print(f"Title: {title}")
 
             return {"script": script, "title": title}
         else:
-            print("Warning: LLM did not provide a title in the expected format. Using the full response as script.")
+            # Final fallback if no markers are found at all
+            print("Warning: LLM response did not contain any expected markers. Using full response as script.")
             return {"script": response_text, "title": "AI Generated Story"}
 
     except Exception as e:
