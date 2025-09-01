@@ -1,5 +1,5 @@
 import random
-import re # <-- Make sure this import is at the top of the file
+import re
 from groq import Groq
 from . import config
 from .tools import rival_scanner
@@ -8,12 +8,6 @@ from . import knowledge_base
 def generate_optimized_script() -> dict | None:
     """
     Generates a new, optimized script by synthesizing multiple data sources.
-
-    This is the new "brain" of the operation. It gathers intel, constructs
-    a "master prompt", and uses an LLM to generate a complete script and title.
-
-    Returns:
-        A dictionary containing the 'script' and 'title', or None on failure.
     """
     print("--- 🤔 Advanced Strategy Agent (v3): Generating optimized script... ---")
 
@@ -26,7 +20,6 @@ def generate_optimized_script() -> dict | None:
         if channel_intel:
             rival_intel.extend(channel_intel)
 
-    # Sort rival intel by views to find the best performers
     rival_intel.sort(key=lambda x: x['views'], reverse=True)
 
     # 2. Construct the Master Prompt
@@ -43,25 +36,29 @@ def generate_optimized_script() -> dict | None:
     else:
         prompt_context += "No data from rival channels is available.\n"
 
-    prompt_context += "\nOur general content style is similar to these topics:\n"
-    prompt_context += "\n".join(f"- {topic}" for topic in config.STATIC_TOPIC_POOL[:2])
-
-
+    # --- RESTORED HIGH-QUALITY STORYTELLING PROMPT ---
     master_prompt = f"""
-    You are an expert YouTube content strategist and scriptwriter for a viral 'Reddit Stories' channel.
-    Your task is to synthesize all of the provided data to create one new, viral video script.
+    You are a skilled writer who specializes in creating dramatic, first-person Reddit-style stories (like AITA, ProRevenge, etc.).
+    Your primary goal is to write a compelling, human-like story based on the ideas you gather from the context provided.
 
-    **[CONTEXT]**
+    **[CONTEXT FOR INSPIRATION ONLY]**
     {prompt_context}
     **[END CONTEXT]**
 
-    **Your Task:**
-    1.  **Analyze:** Briefly analyze the context above.
-    2.  **Synthesize & Generate:** Based on your analysis, create a single, new, original story idea.
-    3.  **Write Script:** Write the complete, ready-to-produce script for this new story. The script must be 200-300 words and written in a compelling, first-person narrative style. **You must begin the script with the marker `**Script:**`.**
-    4.  **Provide Title:** At the very end of your response, on a completely new line, provide a compelling and clickable title for this new story. The title must be prefixed with "Title: ".
+    **YOUR TASK:**
+    1.  **Get an Idea:** Briefly look at the context to get an idea for a new, original story.
+    2.  **Write the Story Script:** Now, write the full story. You MUST follow these creative rules:
+        * **First-Person Narrative:** Write the entire story from the "I" perspective.
+        * **Conversational Tone:** Write in a natural, conversational style, as if someone is genuinely sharing their experience online.
+        * **Story Structure:** The story must have a clear beginning (setup), a middle (conflict), and an end (a satisfying resolution or revenge).
+        * **Word Count:** The story should be between 200 and 300 words.
+        * **Dramatic and Engaging:** Build suspense and emotion. Make the conflict compelling.
+        * **WHAT TO AVOID:** Do NOT write summaries, production notes like "[SFX]", or be preachy. Just tell the story.
+    3.  **Provide Final Output:** Your entire response must follow this exact format:
+        * The script must begin with the marker `**Script:**`.
+        * After the script, on a completely new line, provide a compelling, clickable title for the video, prefixed with `Title: `.
 
-    Generate the script now.
+    Generate the high-quality story now.
     """
 
     # 3. Call the LLM
@@ -69,7 +66,7 @@ def generate_optimized_script() -> dict | None:
         client = Groq(api_key=config.GROQ_API_KEY)
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": master_prompt}],
-            model="qwen/qwen3-32b",
+            model="llama-3.3-70b-versatile", # <-- UPDATED MODEL
             temperature=0.8,
         )
 
@@ -79,31 +76,35 @@ def generate_optimized_script() -> dict | None:
 
         response_text = chat_completion.choices[0].message.content.strip()
 
-        # 4. Final robust parsing logic
-        script = ""
-        title = ""
-
-        # Use regex to find the script, ignoring variations like "Script:" or "**Script:**"
-        script_match = re.search(r'\*\*?Script:\*\*?(.*)', response_text, re.DOTALL | re.IGNORECASE)
+        # --- BULLETPROOF PARSING & VALIDATION LOGIC ---
         
-        if script_match:
-            potential_content = script_match.group(1).strip()
-            
-            if "\nTitle:" in potential_content:
-                parts = potential_content.rsplit("\nTitle:", 1)
-                script = parts[0].strip()
-                title = parts[1].strip()
-            else:
-                # Fallback if title is missing
-                print("Warning: LLM response did not contain 'Title:' marker. Using a fallback title.")
-                script = potential_content
+        # Step 1: Extract raw text for title and script
+        title_match = re.search(r'Title:\s*(.*)', response_text, re.IGNORECASE)
+        script_match = re.search(r'\*\*?Script:\*\*?(.*)', response_text, re.DOTALL | re.IGNORECASE)
+
+        raw_title = title_match.group(1).strip() if title_match else ""
+        raw_script = script_match.group(1).strip() if script_match else response_text
+
+        # Step 2: Aggressively clean the extracted text
+        def clean_text(text_to_clean):
+            cleaned = re.sub(r'Title:\s*.*', '', text_to_clean, flags=re.IGNORECASE)
+            cleaned = re.sub(r'\*\*?Script:\*\*?', '', cleaned, flags=re.IGNORECASE)
+            cleaned = re.sub(r'[`*_~]', '', cleaned)
+            return cleaned.strip()
+
+        title = clean_text(raw_title)
+        script = clean_text(raw_script)
+
+        # Step 3: Validate the cleaned text and create fallbacks if needed
+        if not title or not re.search('[a-zA-Z]', title):
+            print("Warning: Parsed title was invalid. Generating a fallback from the script.")
+            if script and re.search('[a-zA-Z]', script):
                 fallback_title = script.split('.')[0]
-                title = (fallback_title[:100] + '..') if len(fallback_title) > 100 else fallback_title
-        else:
-            # Final fallback if no markers are found at all
-            print("Warning: LLM response did not contain any script markers. Using full response as script.")
-            script = response_text
-            title = "AI Generated Story"
+                title = (fallback_title[:100] + '...') if len(fallback_title) > 100 else fallback_title
+            else:
+                title = "AI Generated Story"
+                if not script or not re.search('[a-zA-Z]', script):
+                    script = "Could not generate a valid script from the AI response."
 
         print(f"--- Strategy Agent successfully generated new content! ---")
         print(f"Title: {title}")
@@ -117,19 +118,3 @@ def generate_optimized_script() -> dict | None:
         traceback.print_exc()
         print("----------------------")
         return None
-
-if __name__ == '__main__':
-    print("--- Testing Advanced Strategy Agent ---")
-    knowledge_base.save_insight(
-        "dummy_id_test",
-        "Video 'AITA for leaving my own party' performed well with 25k views.",
-        {"topic": "AITA for leaving my own party", "views": 25000}
-    )
-
-    result = generate_optimized_script()
-    if result:
-        print("\n--- Generation Complete ---")
-        print(f"Title: {result['title']}")
-        print(f"Script preview: {result['script'][:150]}...")
-    else:
-        print("\n--- Generation Failed ---")

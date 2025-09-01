@@ -1,7 +1,12 @@
 # Core libraries for video/audio processing
 moviepy==1.0.3
 gTTS
+pyttsx3
+edge-tts
+matplotlib
+Pillow==10.1.0
 elevenlabs==0.2.25
+
 
 # API clients and utilities
 google-api-python-client

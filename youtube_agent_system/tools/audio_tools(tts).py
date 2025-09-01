@@ -7,9 +7,9 @@ from .. import config
 
 # --- Voice Selection ---
 # You can choose any voice from the list available here:
-# https://docs.microsoft.com/en-us/azure/cognitive-services/speech-service/language-support#text-to-speech
+# https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts
 # A good, popular choice for narrative content is "en-US-JennyNeural".
-VOICE = "en-US-DavisMultilingualNeural"
+VOICE = "en-US-JennyNeural"
 
 async def _generate_audio_task(text: str, voice: str, output_path: str):
     """Asynchronous task to generate and save a single audio file."""
