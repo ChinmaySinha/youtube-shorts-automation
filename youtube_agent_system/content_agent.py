@@ -53,7 +53,7 @@ def generate_story_script(topic: str) -> str:
                     "content": prompt,
                 }
             ],
-            model="llama3-8b-8192", # A capable and fast model
+            model="llama-3.3-70b-versatile", # A capable and fast model
             temperature=0.8, # A bit of creativity
             max_tokens=1024,
         )

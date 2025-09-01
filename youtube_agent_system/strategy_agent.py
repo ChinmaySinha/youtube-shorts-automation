@@ -36,29 +36,31 @@ def generate_optimized_script() -> dict | None:
     else:
         prompt_context += "No data from rival channels is available.\n"
 
-    # --- RESTORED HIGH-QUALITY STORYTELLING PROMPT ---
+    # --- NEW, HIGH-INTENSITY CREATIVE PROMPT ---
     master_prompt = f"""
-    You are a skilled writer who specializes in creating dramatic, first-person Reddit-style stories (like AITA, ProRevenge, etc.).
-    Your primary goal is to write a compelling, human-like story based on the ideas you gather from the context provided.
+    You are a master storyteller for a viral YouTube channel. Your specialty is delivering the juiciest, most satisfying Reddit revenge stories that make audiences cheer. You are writing AS the main character, filled with righteous indignation.
 
-    **[CONTEXT FOR INSPIRATION ONLY]**
+    **PERFORMANCE DATA & RIVAL EXAMPLES**
+    Use this data to get a feel for what's popular and spark a new, original story idea.
     {prompt_context}
-    **[END CONTEXT]**
+    **END DATA**
 
-    **YOUR TASK:**
-    1.  **Get an Idea:** Briefly look at the context to get an idea for a new, original story.
-    2.  **Write the Story Script:** Now, write the full story. You MUST follow these creative rules:
-        * **First-Person Narrative:** Write the entire story from the "I" perspective.
-        * **Conversational Tone:** Write in a natural, conversational style, as if someone is genuinely sharing their experience online.
-        * **Story Structure:** The story must have a clear beginning (setup), a middle (conflict), and an end (a satisfying resolution or revenge).
-        * **Word Count:** The story should be between 200 and 300 words.
-        * **Dramatic and Engaging:** Build suspense and emotion. Make the conflict compelling.
-        * **WHAT TO AVOID:** Do NOT write summaries, production notes like "[SFX]", or be preachy. Just tell the story.
-    3.  **Provide Final Output:** Your entire response must follow this exact format:
-        * The script must begin with the marker `**Script:**`.
-        * After the script, on a completely new line, provide a compelling, clickable title for the video, prefixed with `Title: `.
+    **YOUR MISSION: WRITE AN EPIC REVENGE STORY**
 
-    Generate the high-quality story now.
+    1.  **THE VILLAIN:** The story needs a villain who is a total piece of work. Make them arrogant, smug, and completely deserving of what's coming to them. Show, don't just tell, their awfulness.
+    2.  **THE SCRIPT:** Write the story from a first-person ("I") perspective, as if you're venting to a friend.
+        * **The Hook:** Start with an explosive opening line that makes the listener immediately intrigued.
+        * **The Slow Burn:** Detail the injustice. Describe how the villain wronged you, and let the frustration build. Make the audience feel your anger.
+        * **The "Aha!" Moment:** Describe the moment you came up with your plan for revenge.
+        * **The Payoff (The Most Important Part):** The revenge must be *poetic justice*. It should be clever, perfectly tailored to the villain's wrongdoing, and utterly devastating to their ego or status. The ending should be a pure, satisfying mic-drop moment.
+        * **Tone:** Write in a natural, conversational style, as if someone is genuinely sharing their experience online. Use contractions (like "I'm" or "don't"), use rhetorical questions like ("Can you believe the audacity?"), and natural pauses (using ellipses... or em-dashes—) to make the delivery feel more authentic.
+        * **Length:** The story should be between 200 and 300 words, suitable for a short video script.
+        * **ABSOLUTELY FORBIDDEN:** Do not use production notes. Do not summarize. Do not explain the moral. Just give me the raw, juicy story.
+    3.  **THE OUTPUT FORMAT (Strictly follow this):**
+        * Start the script with `**Script:**`.
+        * After the script, on a new line, write a viral, clickbait-style title starting with `Title: `.
+
+    Deliver a story that will have everyone commenting, sharing and subscribing.
     """
 
     # 3. Call the LLM
@@ -66,8 +68,8 @@ def generate_optimized_script() -> dict | None:
         client = Groq(api_key=config.GROQ_API_KEY)
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": master_prompt}],
-            model="llama-3.3-70b-versatile", # <-- UPDATED MODEL
-            temperature=0.8,
+            model="llama-3.3-70b-versatile",
+            temperature=0.9, # Increased slightly for more "spicy" creativity
         )
 
         if not chat_completion.choices:
