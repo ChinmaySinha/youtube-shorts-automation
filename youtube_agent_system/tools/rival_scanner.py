@@ -13,69 +13,80 @@ def get_video_title(url: str) -> str | None:
         print(f"Error scanning single URL '{url}': {e}")
         return None
 
-def get_channel_shorts_info(channel_url: str, playlist_end: int = 10) -> list[dict] | None:
+def get_channel_shorts_info(channel_url: str, playlist_end: int = 5) -> list[dict] | None:
     """
-    Scrapes the /shorts feed of a YouTube channel for video titles and view counts.
+    Scrapes a YouTube channel for recent video titles and view counts.
+    It first tries the /shorts feed, and if that fails, it falls back to the /videos feed.
 
     Args:
         channel_url: The URL of the YouTube channel.
-        playlist_end: The number of recent shorts to scrape (default 10).
+        playlist_end: The number of recent videos to scrape (default 5).
 
     Returns:
-        A list of dictionaries, each containing 'title' and 'views',
-        or None if an error occurs.
+        A list of dictionaries, each containing 'title' and 'views', or None on error.
     """
-    # Ensure the URL points to the shorts feed for yt-dlp
-    if not channel_url.endswith('/shorts'):
-        channel_url = channel_url.rstrip('/') + '/shorts'
-
-    print(f"--- Scanning rival channel: {channel_url} ---")
+    # URLs to attempt, in order of preference
+    channel_feeds = [
+        channel_url.rstrip('/') + '/shorts',
+        channel_url.rstrip('/') + '/videos'
+    ]
 
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
-        'extract_flat': 'in_playlist', # Don't extract full info for each video, just the list
-        'playlistend': playlist_end,   # Limit to the N most recent shorts
+        'extract_flat': 'in_playlist',
+        'playlistend': playlist_end,
         'skip_download': True,
     }
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # This gets a flat list of video entries in the playlist (the /shorts feed)
-            playlist_dict = ydl.extract_info(channel_url, download=False)
+    for feed_url in channel_feeds:
+        print(f"--- Scanning rival channel feed: {feed_url} ---")
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                playlist_dict = ydl.extract_info(feed_url, download=False)
 
-            video_infos = []
-            if 'entries' in playlist_dict:
-                for video in playlist_dict['entries']:
-                    # Now we need to get the view count for each video, which requires a second call
-                    # This is inefficient but necessary as view_count isn't in the flat extract
-                    video_details = ydl.extract_info(video['url'], download=False)
-                    title = video_details.get('title')
-                    view_count = video_details.get('view_count')
+                video_infos = []
+                if 'entries' in playlist_dict and playlist_dict['entries']:
+                    for video in playlist_dict['entries']:
+                        # A second call is needed to get the view_count
+                        video_details = ydl.extract_info(video['url'], download=False)
+                        title = video_details.get('title')
+                        view_count = video_details.get('view_count')
 
-                    if title and view_count is not None:
-                        video_infos.append({'title': title, 'views': view_count})
-                        print(f"Found rival short: '{title}' ({view_count} views)")
-
-                # Sort by view count descending to find the most popular ones
-                video_infos.sort(key=lambda x: x['views'], reverse=True)
-                return video_infos
+                        if title and view_count is not None:
+                            video_infos.append({'title': title, 'views': view_count})
+                            print(f"Found rival video: '{title}' ({view_count} views)")
+                    
+                    video_infos.sort(key=lambda x: x['views'], reverse=True)
+                    return video_infos
+                else:
+                    print(f"Could not find any videos for feed: {feed_url}")
+        
+        except yt_dlp.utils.DownloadError as e:
+            if "This channel does not have a shorts tab" in str(e):
+                print(f"Channel does not have a shorts tab. Trying the main videos feed...")
+                continue
             else:
-                print(f"Could not find any videos for channel: {channel_url}")
+                print(f"An unexpected download error occurred while scanning '{feed_url}': {e}")
                 return None
+        except Exception as e:
+            print(f"An unexpected error occurred while scanning '{feed_url}': {e}")
+            return None
 
-    except Exception as e:
-        print(f"An error occurred while scanning channel '{channel_url}': {e}")
-        return None
+    print(f"Could not retrieve videos from any feed for channel: {channel_url}")
+    return None
 
 if __name__ == '__main__':
-    # Example usage:
-    test_channel_url = "https://www.youtube.com/@Broken.Stories"
-    videos = get_channel_shorts_info(test_channel_url, playlist_end=5) # Scan last 5 shorts
-
-    if videos:
-        print("\n--- Successfully extracted video info ---")
-        for video in videos:
+    test_channel_1 = "https://www.youtube.com/@Broken.Stories"
+    videos_1 = get_channel_shorts_info(test_channel_1, playlist_end=5)
+    if videos_1:
+        print("\n--- Successfully extracted from channel 1 ---")
+        for video in videos_1:
             print(f"Title: {video['title']}, Views: {video['views']}")
-    else:
-        print("\n--- Failed to extract video info ---")
+
+    test_channel_2 = "https://www.youtube.com/@MrBeast"
+    videos_2 = get_channel_shorts_info(test_channel_2, playlist_end=5)
+    if videos_2:
+        print("\n--- Successfully extracted from channel 2 ---")
+        for video in videos_2:
+            print(f"Title: {video['title']}, Views: {video['views']}")

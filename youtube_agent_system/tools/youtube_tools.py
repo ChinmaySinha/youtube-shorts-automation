@@ -7,13 +7,8 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from .. import config
 
-# This file handles the complexities of YouTube API authentication and uploading.
-
 def _get_credentials():
-    """
-    Handles the OAuth 2.0 flow and returns valid credentials.
-    This is the core authentication logic.
-    """
+    """Handles the OAuth 2.0 flow and returns valid credentials."""
     creds = None
     token_path = os.path.join(config.BASE_DIR, 'token.pickle')
 
@@ -27,13 +22,9 @@ def _get_credentials():
         else:
             secrets_file = os.path.join(config.BASE_DIR, config.YOUTUBE_CLIENT_SECRETS_FILE)
             if not os.path.exists(secrets_file):
-                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                print("!!! ERROR: client_secrets.json not found.            !!!")
-                print("!!! Please follow the setup instructions in README.md!!!")
-                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                print("!!! ERROR: client_secrets.json not found. !!!")
                 return None
             flow = InstalledAppFlow.from_client_secrets_file(secrets_file, config.YOUTUBE_SCOPES)
-            # The user needs to re-authenticate if they change the scopes
             creds = flow.run_local_server(port=0)
 
         with open(token_path, 'wb') as token:
@@ -47,13 +38,13 @@ def get_youtube_service():
         return None
     return build(config.YOUTUBE_API_SERVICE_NAME, config.YOUTUBE_API_VERSION, credentials=credentials)
 
-def upload_video_to_youtube(video_path: str, title: str, description: str, tags: list[str]):
-    """Uploads a video to YouTube with the given metadata."""
+def upload_video_to_youtube(video_path: str, title: str, description: str, tags: list[str]) -> str | None:
+    """Uploads a video to YouTube and returns the new video's ID."""
     try:
         youtube = get_youtube_service()
         if not youtube:
             print("Could not get YouTube service. Aborting upload.")
-            return
+            return None
 
         body = {
             "snippet": {
@@ -62,9 +53,7 @@ def upload_video_to_youtube(video_path: str, title: str, description: str, tags:
                 "tags": tags,
                 "categoryId": "22"
             },
-            "status": {
-                "privacyStatus": "public"
-            }
+            "status": { "privacyStatus": "public" }
         }
 
         media = MediaFileUpload(video_path, chunksize=-1, resumable=True)
@@ -80,11 +69,14 @@ def upload_video_to_youtube(video_path: str, title: str, description: str, tags:
             status, response = request.next_chunk()
             if status:
                 print(f"Uploaded {int(status.progress() * 100)}%")
-
-        print(f"--- Upload Successful! Video ID: {response.get('id')} ---")
+        
+        video_id = response.get('id')
+        print(f"--- Upload Successful! Video ID: {video_id} ---")
+        return video_id
 
     except Exception as e:
         print(f"An error occurred during YouTube upload: {e}")
+        return None
 
 def get_video_analytics(video_id: str) -> dict | None:
     """Fetches key performance indicators for a specific YouTube video."""

@@ -55,9 +55,9 @@ def generate_seo_metadata(topic: str) -> dict:
         return {"error": str(e)}
 
 
-def publish_video(video_path: str, topic: str):
+def publish_video(video_path: str, topic: str) -> str | None:
     """
-    Orchestrates the publishing process for a video.
+    Orchestrates the publishing process for a video and returns the new video ID.
     """
     print("--- 🚚 Publishing Agent Initialized 🚚 ---")
 
@@ -65,10 +65,10 @@ def publish_video(video_path: str, topic: str):
     metadata = generate_seo_metadata(topic)
     if "error" in metadata:
         print(f"Publishing failed: {metadata['error']}")
-        return
+        return None
 
-    # Step 2: Upload the video to YouTube
-    youtube_tools.upload_video_to_youtube(
+    # Step 2: Upload the video to YouTube and get the ID back
+    video_id = youtube_tools.upload_video_to_youtube(
         video_path=video_path,
         title=metadata["title"],
         description=metadata["description"],
@@ -76,6 +76,7 @@ def publish_video(video_path: str, topic: str):
     )
 
     print("--- 🚚 Publishing Agent Finished 🚚 ---")
+    return video_id # <-- Return the real video ID
 
 
 if __name__ == '__main__':

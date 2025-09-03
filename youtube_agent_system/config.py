@@ -16,9 +16,7 @@ PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
 # YouTube Data API v3
-# The client secrets file is needed for OAuth 2.0
 YOUTUBE_CLIENT_SECRETS_FILE = "client_secrets.json"
-# The scopes define the permissions the app will request
 YOUTUBE_SCOPES = [
     "https://www.googleapis.com/auth/youtube.upload",
     "https://www.googleapis.com/auth/yt-analytics.readonly",
@@ -31,66 +29,60 @@ YT_ANALYTICS_API_VERSION = "v2"
 
 
 # --- Project Structure & File Paths ---
-# This helps in managing file paths consistently across modules
-
-# Base directory of the project
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Directory for storing generated content (videos, audio, etc.)
 ASSETS_DIR = os.path.join(BASE_DIR, "generated_assets")
+LOGS_DIR = os.path.join(BASE_DIR, "logs")
 
-# Ensure the assets directory exists
+# Ensure the directories exist
 os.makedirs(ASSETS_DIR, exist_ok=True)
+os.makedirs(LOGS_DIR, exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, "fonts"), exist_ok=True)
 
 
 # --- Content & Production Settings ---
 
-# List of predefined Reddit-style story topics.
-# The system will use these when it cannot find new topics from rivals.
 STATIC_TOPIC_POOL = [
-    "AITA for exposing my cheating ex-girlfriend to her entire family at her wedding?",
-    "My entitled boss stole my work and took credit, so I got pro revenge by deleting the master files.",
-    "AITA for refusing to give up my first-class seat for a newlywed couple on their honeymoon?",
-    "My roommate kept eating my food, so I made the spiciest chili in the world as revenge.",
-    "AITA for telling my parents I won't pay for my sister's college after they spent my tuition fund?",
+    "AITA for exposing my cheating girlfriend to her family at her own birthday party?",
+    "My sister stole my inheritance, so I got pro revenge by ruining her wedding.",
+    "AITA for refusing to give up my first-class seat for a celebrity's child?",
+    "My roommate ate my expensive food, so I replaced it with the world's spiciest ghost pepper extract.",
+    "AITA for telling my parents I won't pay for my brother's college after they spent my tuition fund on a vacation?",
+    "My landlord tried to illegally evict me, so I used the law to make his life a living nightmare.",
+    "AITA for reporting my friend's 'emotional support' dog after it destroyed my apartment?",
+    "My entitled cousin demanded my wedding dress, so I gave her a cheap knockoff and watched the chaos unfold.",
 ]
 
-# List of rival YouTube channel URLs to scan for new topic ideas.
-# More can be added here.
+# --- CORRECTED LIST OF RIVAL CHANNELS ---
 RIVAL_CHANNEL_URLS = [
+    "https://www.youtube.com/@RedditJar",
+    "https://www.youtube.com/@redditdramatale",
     "https://www.youtube.com/@Broken.Stories",
 ]
 
-# Default topic if none is provided (fallback)
-DEFAULT_TOPIC = "the story of a forgotten lighthouse keeper"
+DEFAULT_TOPIC = "the story of a forgotten house-keeper who had the biggest glow-up"
 
-# Search queries for background gameplay footage.
-# The system will randomly pick one of these for each video.
 GAMEPLAY_QUERIES = [
     "minecraft parkour",
     "gta v gameplay",
     "satisfying compilation",
-    "racing simulator",
 ]
 
-# Path to a local video file to use as a fallback if Pexels API fails.
-# Leave as an empty string "" to not use a fallback.
-# Example: r"C:\Users\YourUser\Videos\my_gameplay.mp4"
-LOCAL_VIDEO_FALLBACK_PATH = ""
+LOCAL_VIDEO_FALLBACK_PATH = r"youtube_agent_system\Minecraft Parkour Gameplay NO COPYRIGHT (Vertical) - Orbital - No Copyright Gameplay (1080p, h264).mp4"
 
 # Video settings
 VIDEO_WIDTH = 1080
-VIDEO_HEIGHT = 1920 # 9:16 aspect ratio for shorts
-VIDEO_FPS = 24
+VIDEO_HEIGHT = 1920
+VIDEO_FPS = 30
+VIDEO_SPEED = 1.4
 
 # Text overlay settings
-TEXT_COLOR = "#00FFFF" # Vibrant Cyan
+TEXT_COLOR = "#1FABAB" 
 TEXT_FONT = "Montserrat-Black.ttf"
-TEXT_FONT_SIZE = 90 # Increased slightly for more impact
+TEXT_FONT_SIZE = 84
 TEXT_STROKE_COLOR = "black"
-TEXT_STROKE_WIDTH = 8 # Increased significantly for a much thicker outline
+TEXT_STROKE_WIDTH = 8
 TEXT_POSITION = ("center", "center")
 
 # Voiceover settings
 VOICEOVER_LANGUAGE = "en"
-VOICEOVER_Tld = "co.uk" # Top-level domain for accent, e.g., 'co.uk', 'com.au'
+VOICEOVER_Tld = "co.uk"
