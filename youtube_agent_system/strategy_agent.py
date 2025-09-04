@@ -62,7 +62,7 @@ def _generate_script_v_a(prompt_context: str) -> dict | None:
 
     **3. WRITING STYLE (CRITICAL):**
     * **Show, Don't Tell:** Describe specific actions and their impact, not just emotions.
-    * **Authentic Voice:** Use a natural, conversational, first-person ("I") tone.
+    * **Authentic Voice:** Use a natural, conversational, first-person ("I") tone. The story should be easy to follow.
     * **Length:** 200-300 words. Be very strict about this.
     * **ABSOLUTELY NO:** No production notes like "[SFX]". No summaries. No morals.
 
@@ -101,8 +101,12 @@ def _generate_script_v_b(prompt_context: str) -> dict | None:
     * **A. THE HOOK:** Start 'in medias res' with the most dramatic moment.
     * **B. THE MISDIRECTION:** Create a wrong conclusion; establish an 'apparent villain'.
     * **C. THE REVEAL:** Reveal undeniable proof (receipts) that flips the entire story.
-    **3. WRITING STYLE:** Show, don't tell. Authentic first-person voice. 200-300 words. NO production notes, summaries, or morals.
-    **4. OUTPUT FORMAT:** Start with `**Script:**`. After the script, on a new line, write `Title: `.
+    **3. WRITING STYLE (CRITICAL):**
+    * **Show, Don't Tell:** Describe specific actions and their impact, not just emotions.
+    * **Authentic Voice:** Use a natural, conversational, first-person ("I") tone. The story should be easy to follow.
+    * **Length:** 200-300 words. Be very strict about this.
+    * **ABSOLUTELY NO:** No production notes like "[SFX]". No summaries. No morals.
+    **4. OUTPUT FORMAT:** Start with `**Script:**`. After the script, on a new line, write `Title: `. (Strictly follow this.)
     """
     user_prompt = f"""
     **INSPIRATION (DO NOT COPY, USE FOR VIBE ONLY)**
@@ -144,8 +148,12 @@ def _generate_script_v_c(prompt_context: str) -> dict | None:
     * **A. THE HOOK:** Start 'in medias res' with the most dramatic moment.
     * **B. THE MISDIRECTION:** Create a wrong conclusion; establish an 'apparent villain'.
     * **C. THE REVEAL:** Reveal undeniable proof (receipts) that flips the entire story.
-    **3. WRITING STYLE:** Show, don't tell. Authentic first-person voice. 200-300 words. NO production notes, summaries, or morals.
-    **4. OUTPUT FORMAT:** Start with `**Script:**`. After the script, on a new line, write `Title: `.
+    **3. WRITING STYLE (CRITICAL):**
+    * **Show, Don't Tell:** Describe specific actions and their impact, not just emotions.
+    * **Authentic Voice:** Use a natural, conversational, first-person ("I") tone. The story should be easy to follow.
+    * **Length:** 200-300 words. Be very strict about this.
+    * **ABSOLUTELY NO:** No production notes like "[SFX]". No summaries. No morals.
+    **4. OUTPUT FORMAT:** Start with `**Script:**`. After the script, on a new line, write `Title: `. (Strictly follow this)
     """
     user_prompt = f"""
     **INSPIRATION (DO NOT COPY, USE FOR VIBE ONLY)**
@@ -199,7 +207,7 @@ def _generate_script_v_d(prompt_context: str) -> dict | None:
 
     **3. WRITING STYLE (CRITICAL):**
     * **Show, Don't Tell:** Describe specific actions and their impact, not just emotions.
-    * **Authentic Voice:** Use a natural, conversational, first-person ("I") tone.
+    * **Authentic Voice:** Use a natural, conversational, first-person ("I") tone. The story should be easy to follow.
     * **Length:** 200-300 words. Be very strict about this.
     * **ABSOLUTELY NO:** No production notes like "[SFX]". No summaries. No morals.
 
@@ -247,7 +255,7 @@ def _generate_script_v_e(prompt_context: str) -> dict | None:
 
     **3. WRITING STYLE (CRITICAL):**
     * **Show, Don't Tell:** Describe specific actions and their impact, not just emotions.
-    * **Authentic Voice:** Use a natural, conversational, first-person ("I") tone.
+    * **Authentic Voice:** Use a natural, conversational, first-person ("I") tone. The story should be easy to follow.
     * **Length:** 200-300 words. Be very strict about this.
     * **ABSOLUTELY NO:** No production notes like "[SFX]". No summaries. No morals.
 
@@ -295,7 +303,7 @@ def _generate_script_v_f(prompt_context: str) -> dict | None:
 
     **3. WRITING STYLE (CRITICAL):**
     * **Show, Don't Tell:** Describe specific actions and their impact, not just emotions.
-    * **Authentic Voice:** Use a natural, conversational, first-person ("I") tone.
+    * **Authentic Voice:** Use a natural, conversational, first-person ("I") tone. The story should be easy to follow.
     * **Length:** 200-300 words. Be very strict about this.
     * **ABSOLUTELY NO:** No production notes like "[SFX]". No summaries. No morals.
 
