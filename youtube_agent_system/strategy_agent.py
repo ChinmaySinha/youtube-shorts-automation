@@ -106,7 +106,9 @@ def _generate_script_v_b(prompt_context: str) -> dict | None:
     * **Authentic Voice:** Use a natural, conversational, first-person ("I") tone. The story should be easy to follow.
     * **Length:** 200-300 words. Be very strict about this.
     * **ABSOLUTELY NO:** No production notes like "[SFX]". No summaries. No morals.
-    **4. OUTPUT FORMAT:** Start with `**Script:**`. After the script, on a new line, write `Title: `. (Strictly follow this.)
+    **4. THE OUTPUT FORMAT (Strictly follow this):**
+    * Start the script with `**Script:**`.
+    * After the script, on a new line, write a short viral, clickbait-style title starting with `Title: `.
     """
     user_prompt = f"""
     **INSPIRATION (DO NOT COPY, USE FOR VIBE ONLY)**
@@ -153,7 +155,9 @@ def _generate_script_v_c(prompt_context: str) -> dict | None:
     * **Authentic Voice:** Use a natural, conversational, first-person ("I") tone. The story should be easy to follow.
     * **Length:** 200-300 words. Be very strict about this.
     * **ABSOLUTELY NO:** No production notes like "[SFX]". No summaries. No morals.
-    **4. OUTPUT FORMAT:** Start with `**Script:**`. After the script, on a new line, write `Title: `. (Strictly follow this)
+    **4. THE OUTPUT FORMAT (Strictly follow this):**
+    * Start the script with `**Script:**`.
+    * After the script, on a new line, write a short viral, clickbait-style title starting with `Title: `.
     """
     user_prompt = f"""
     **INSPIRATION (DO NOT COPY, USE FOR VIBE ONLY)**
@@ -307,7 +311,7 @@ def _generate_script_v_f(prompt_context: str) -> dict | None:
     * **Length:** 200-300 words. Be very strict about this.
     * **ABSOLUTELY NO:** No production notes like "[SFX]". No summaries. No morals.
 
-    **4. THE OUTPUT FORMAT (Strictly follow this):**
+    **4. THE OUTPUT FORMAT (Very Strictly follow this):**
     * Start the script with `**Script:**`.
     * After the script, on a new line, write a short viral, clickbait-style title starting with `Title: `.
 
