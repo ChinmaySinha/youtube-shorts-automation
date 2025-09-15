@@ -1,51 +1,45 @@
+# youtube_agent_system/production_agent.py
 from .tools import audio_tools, video_tools, editing_tools
 
 def create_video_from_script(title: str, script: str) -> str | None:
     """
-    Orchestrates the entire video production pipeline, now with a title reveal.
-
-    This function embodies the ProductionAgent. It takes a title and a script,
-    then uses the various tools to generate audio for both, source a video,
-    and assemble the final product.
-
-    Args:
-        title: The title of the video.
-        script: The narrative script for the video.
-
-    Returns:
-        The file path of the final rendered video, or None if any step fails.
+    Orchestrates the entire video production pipeline, now with a title reveal
+    and karaoke-style word-by-word subtitles.
     """
-    print("--- 🎬 Production Agent Initialized (with Title Reveal) 🎬 ---")
+    print("--- 🎬 Production Agent Initialized (Karaoke Style) 🎬 ---")
 
     # --- Audio Generation ---
-    # Step 1a: Generate audio for the main story script
-    story_audio_clips_info = audio_tools.text_to_speech_sentences(script, title)
-    if not story_audio_clips_info:
-        print("Production failed: Could not generate story audio.")
+    # Step 1a: Generate single audio file for the story WITH WORD TIMESTAMPS
+    story_audio_info = audio_tools.generate_audio_with_word_timestamps(script, title)
+    if not story_audio_info:
+        print("Production failed: Could not generate story audio with timestamps.")
         return None
+    
+    story_audio_path = story_audio_info['audio_path']
+    word_timestamps = story_audio_info['word_timestamps']
 
-    # Step 1b: Generate a single audio clip for the title
-    # We treat the title as a single sentence.
-    title_audio_info = audio_tools.text_to_speech_sentences(title, f"{title}_title")
-    if not title_audio_info:
+    # Step 1b: Generate audio for the title (as before)
+    title_audio_info_list = audio_tools.text_to_speech_sentences(title, f"{title}_title")
+    if not title_audio_info_list:
         print("Production failed: Could not generate title audio.")
         return None
+    title_audio_clip_info = title_audio_info_list[0] # It's a list with one item
 
     # --- Visual Sourcing ---
-    # Step 2: Get a background video
-    #background_video_path = video_tools.get_background_video()
+    # Step 2: Get a background video (as before)
     background_video_path = r"youtube_agent_system\You literally have to Press Nothing to finish this track (Trackmania 2020).mp4"
     if not background_video_path:
         print("Production failed: Could not retrieve background video.")
         return None
 
     # --- Video Assembly ---
-    # Step 3: Assemble the final video, now passing the title info as well
+    # Step 3: Assemble the final video using the new karaoke-style function
     final_video_path = editing_tools.create_final_video(
         title=title,
         background_video_path=background_video_path,
-        story_audio_clips_info=story_audio_clips_info,
-        title_audio_clip_info=title_audio_info[0] # It's a list with one item
+        story_audio_path=story_audio_path,
+        word_timestamps=word_timestamps,
+        title_audio_clip_info=title_audio_clip_info
     )
 
     if not final_video_path:
@@ -57,10 +51,9 @@ def create_video_from_script(title: str, script: str) -> str | None:
     return final_video_path
 
 if __name__ == '__main__':
-    # To test this agent, we need a script first.
     from . import content_agent
 
-    test_topic = "AITA for swapping my sister's wedding cake with a foam replica?"
+    test_topic = "AITA for telling my brother his 'dream job' is a pyramid scheme?"
     print(f"--- Running Full Production Test for topic: '{test_topic}' ---")
 
     test_script = content_agent.generate_story_script(test_topic)

@@ -1,3 +1,4 @@
+# youtube_agent_system/tools/editing_tools.py
 import os
 import re
 import numpy as np
@@ -13,6 +14,7 @@ EMOJI_FONT_FILENAME = "seguiemj.ttf"
 
 def create_stroked_text_image(text, clip_size, font_filename, font_size, text_color, stroke_width, stroke_color, text_max_width_ratio=0.8, background_color=None):
     """
+    (Existing Function - Unchanged)
     Creates an image of text with a stroke, now with an optional solid background color.
     """
     img_width, img_height = clip_size
@@ -50,11 +52,10 @@ def create_stroked_text_image(text, clip_size, font_filename, font_size, text_co
     if current_line_words:
         wrapped_lines.append(" ".join(current_line_words))
 
-    # --- UPDATED: Create image with optional background ---
     if background_color:
         final_image = Image.new("RGBA", (img_width, img_height), background_color)
     else:
-        final_image = Image.new("RGBA", (img_width, img_height), (0, 0, 0, 0)) # Transparent
+        final_image = Image.new("RGBA", (img_width, img_height), (0, 0, 0, 0))
 
     final_draw = ImageDraw.Draw(final_image)
 
@@ -72,7 +73,6 @@ def create_stroked_text_image(text, clip_size, font_filename, font_size, text_co
         "\U00002702-\U000027B0"
         "\U000024C2-\U0001F251" 
         "]+")
-
     
     LINE_SPACING_MULTIPLIER = 1.2
     line_height = (primary_font.getbbox("Tg")[3] - primary_font.getbbox("Tg")[1]) * LINE_SPACING_MULTIPLIER
@@ -110,22 +110,26 @@ def create_stroked_text_image(text, clip_size, font_filename, font_size, text_co
 def create_final_video(
     title: str,
     background_video_path: str,
-    story_audio_clips_info: list[dict],
+    story_audio_path: str, # <-- Changed from a list of clips to a single path
+    word_timestamps: list[dict], # <-- NEW: Pass the word timestamps
     title_audio_clip_info: dict
 ) -> str | None:
     """
-    Assembles the final video with special formatting for the title.
+    (REWRITTEN FUNCTION)
+    Assembles the final video with a title card and karaoke-style, word-by-word subtitles.
     """
-    print("--- Assembling Final Video ---")
-    if not story_audio_clips_info or not title_audio_clip_info:
+    print("--- Assembling Final Video (Karaoke Style) ---")
+    if not story_audio_path or not title_audio_clip_info:
         print("Error: Missing audio clips to create video.")
         return None
 
     try:
+        # 1. Load audio clips
         title_audio_clip = AudioFileClip(title_audio_clip_info['audio_path'])
-        story_audio_clips = [AudioFileClip(info['audio_path']) for info in story_audio_clips_info]
-        full_voiceover_track = concatenate_audioclips([title_audio_clip] + story_audio_clips)
+        story_audio_clip = AudioFileClip(story_audio_path)
+        full_voiceover_track = concatenate_audioclips([title_audio_clip, story_audio_clip])
         
+        # 2. Prepare background video
         background_clip = VideoFileClip(background_video_path)
         video_adjusted = background_clip.loop(duration=full_voiceover_track.duration).set_duration(full_voiceover_track.duration)
 
@@ -137,41 +141,42 @@ def create_final_video(
 
         all_text_clips = []
         clip_size = (final_background.w, final_background.h)
-        text_max_width_ratio = 0.8
 
-        # --- CREATE THE TITLE WITH A SOLID BLACK BACKGROUND ---
+        # 3. Create the title reveal (as before)
         title_img = create_stroked_text_image(
             text=title, 
             clip_size=clip_size, 
             font_filename=config.TEXT_FONT, 
             font_size=config.TEXT_FONT_SIZE,
-            text_color="white",         # Override color to white for title
-            stroke_width=2,             # A thinner stroke looks better on a solid background
+            text_color="white",
+            stroke_width=2,
             stroke_color="black",
             text_max_width_ratio=0.95,
-            background_color=(0, 0, 0, 255) # RGBA for solid (100% opaque) black
+            background_color=(0, 0, 0, 255) # Solid black background
         )
         title_text_clip = ImageClip(title_img).set_duration(title_audio_clip.duration)
         all_text_clips.append(title_text_clip)
 
-        # --- CREATE SUBTITLES WITH TRANSPARENT BACKGROUND ---
-        current_time = title_audio_clip.duration
-        for info in story_audio_clips_info:
-            text_img = create_stroked_text_image(
-                text=info['text'], 
+        # 4. NEW: Create Karaoke-style word clips
+        title_duration = title_audio_clip.duration
+        for word_info in word_timestamps:
+            word = word_info['word']
+            start_time = word_info['start'] + title_duration # Offset by title duration
+            duration = word_info['duration']
+
+            word_img = create_stroked_text_image(
+                text=word, 
                 clip_size=clip_size, 
                 font_filename=config.TEXT_FONT, 
-                font_size=config.TEXT_FONT_SIZE,
-                text_color=config.TEXT_COLOR,         # Use the cyan color from config
-                stroke_width=config.TEXT_STROKE_WIDTH, # Use the thick stroke from config
+                font_size=config.TEXT_FONT_SIZE + 20, # Make single words larger
+                text_color=config.TEXT_COLOR,
+                stroke_width=config.TEXT_STROKE_WIDTH + 1, # Thicker stroke for visibility
                 stroke_color=config.TEXT_STROKE_COLOR,
-                text_max_width_ratio=text_max_width_ratio
-                # No background_color is passed, so it will be transparent by default
             )
-            text_clip = ImageClip(text_img).set_start(current_time).set_duration(info['duration'])
+            text_clip = ImageClip(word_img).set_start(start_time).set_duration(duration)
             all_text_clips.append(text_clip)
-            current_time += info['duration']
 
+        # 5. Composite everything together
         final_clip = CompositeVideoClip([final_background] + all_text_clips)
         final_clip.audio = full_voiceover_track
 

@@ -5,7 +5,8 @@ pyttsx3
 edge-tts
 matplotlib
 Pillow==10.1.0
-elevenlabs==0.2.25
+elevenlabs>=1.0.0 
+whisper-timestamped
 
 
 # API clients and utilities

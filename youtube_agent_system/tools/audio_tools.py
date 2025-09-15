@@ -1,71 +1,97 @@
+# youtube_agent_system/tools/audio_tools.py
 import os
 import re
 import asyncio
 import edge_tts
+import time
+import whisper_timestamped as whisper
 from moviepy.editor import AudioFileClip
 from .. import config
 
-# --- Voice Selection ---
-# You can choose any voice from the list available here:
-# https://docs.microsoft.com/en-us/azure/cognitive-services/speech-service/language-support#text-to-speech
-# A good, popular choice for narrative content is "en-US-JennyNeural".
-VOICE = "en-US-DavisMultilingualNeural"
-
-async def _generate_audio_task(text: str, voice: str, output_path: str):
-    """Asynchronous task to generate and save a single audio file."""
+async def _generate_tts_audio(text: str, voice: str, output_path: str):
+    """Async helper function to generate audio using edge-tts."""
     communicate = edge_tts.Communicate(text, voice)
     await communicate.save(output_path)
 
-def text_to_speech_sentences(script: str, topic: str) -> list[dict]:
+def text_to_speech_sentences(script: str, title: str) -> list[dict] | None:
     """
-    Converts a script into a series of sentence-by-sentence audio files
-    using the high-quality edge-tts library.
+    Generates audio for simple sentences (like the title) using Edge-TTS.
     """
-    print("--- Generating Audio for Script (using edge-tts) ---")
-    sanitized_topic = re.sub(r'[\s\W]+', '_', topic.lower())
-    sentences = re.split(r'(?<=[.!?])\s+', script.strip())
-    audio_clips_info = []
+    print("--- 🔊 Generating Title Audio with Edge-TTS ---")
+    safe_title = re.sub(r'[<>:"/\\|?*]', '', title).replace(' ', '_')[:20]
+    output_filename = f"{safe_title}_title.mp3"
+    output_path = os.path.join(config.ASSETS_DIR, output_filename)
 
-    # The edge-tts library uses asyncio, so we run each task in a new event loop.
     try:
-        # Get the current running event loop or create a new one if none exists.
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        # If no event loop is running, create a new one.
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        asyncio.run(_generate_tts_audio(script, config.EDGE_TTS_VOICE, output_path))
+        time.sleep(1.0) 
 
-    for i, sentence in enumerate(sentences):
-        if not sentence:
-            continue
+        audio_clip = AudioFileClip(output_path)
+        clip_info = [{
+            "text": script,
+            "audio_path": output_path,
+            "duration": audio_clip.duration
+        }]
+        audio_clip.close()
+        return clip_info
+        
+    except Exception as e:
+        print(f"An error occurred during Edge-TTS generation for title: {e}")
+        return None
 
-        output_filename = f"{sanitized_topic}_sentence_{i}.mp3"
-        output_path = os.path.join(config.ASSETS_DIR, output_filename)
+def generate_audio_with_word_timestamps(script: str, title: str) -> dict | None:
+    """
+    (REWRITTEN FOR STABILITY)
+    Generates an MP3, converts it to a stable WAV file, then uses Whisper for timestamps.
+    """
+    print("--- 🔊 Generating Audio with Edge-TTS ---")
+    safe_title = re.sub(r'[<>:"/\\|?*]', '', title).replace(' ', '_')[:20]
+    
+    # Define paths for both MP3 and the new WAV file
+    mp3_output_path = os.path.join(config.ASSETS_DIR, f"{safe_title}_full_story.mp3")
+    wav_output_path = os.path.join(config.ASSETS_DIR, f"{safe_title}_full_story.wav")
 
-        try:
-            # Run the asynchronous generation task.
-            loop.run_until_complete(_generate_audio_task(sentence, VOICE, output_path))
+    try:
+        # Step 1: Generate the initial MP3 audio file
+        asyncio.run(_generate_tts_audio(script, config.EDGE_TTS_VOICE, mp3_output_path))
+        print(f"Audio file generated with Edge-TTS at: {mp3_output_path}")
+        time.sleep(1.0)
 
-            # Get duration of the saved audio file
-            with AudioFileClip(output_path) as audio_clip:
-                duration = audio_clip.duration
+        # Step 2: Convert the MP3 to a stable WAV file to ensure compatibility
+        print(f"---  sanitizing audio by converting to WAV format ---")
+        with AudioFileClip(mp3_output_path) as audio_clip:
+            audio_clip.write_audiofile(wav_output_path, codec='pcm_s16le')
+        print(f"Sanitized WAV file saved at: {wav_output_path}")
 
-            audio_clips_info.append({
-                "audio_path": output_path,
-                "duration": duration,
-                "text": sentence
-            })
-            print(f"Generated audio for sentence {i+1}/{len(sentences)}: {output_path} ({duration:.2f}s)")
+        # Step 3: Use Whisper on the clean WAV file to get precise timestamps
+        print("--- 🎤 Analyzing audio for precise word timestamps with Whisper ---")
+        audio = whisper.load_audio(wav_output_path)
+        model = whisper.load_model("tiny", device="cpu") 
+        result = whisper.transcribe(model, audio, language="en")
 
-        except Exception as e:
-            print(f"Error generating audio for sentence: {sentence}. Error: {e}")
-            continue
+        word_timestamps = []
+        for segment in result["segments"]:
+            for word_info in segment["words"]:
+                word = word_info["text"].strip()
+                start = word_info["start"]
+                end = word_info["end"]
+                duration = end - start
+                
+                word_timestamps.append({
+                    "word": word,
+                    "start": start,
+                    "duration": duration
+                })
+        
+        if not word_timestamps:
+            raise ValueError("Whisper could not detect any words in the audio.")
 
-    return audio_clips_info
+        print(f"Generated precise timestamps for {len(word_timestamps)} words.")
+        # Return the original MP3 path for the final video, but the WAV was used for analysis
+        return {"audio_path": mp3_output_path, "word_timestamps": word_timestamps}
 
-if __name__ == '__main__':
-    test_script = "Hello world. This is a test of the edge-tts library, which provides high-quality, human-like voices for free."
-    test_topic = "edge-tts_Test"
-    clips = text_to_speech_sentences(test_script, test_topic)
-    print("\n--- Results ---")
-    print(clips)
+    except Exception as e:
+        print(f"An error occurred during audio generation or timestamping: {e}")
+        import traceback
+        traceback.print_exc()
+        return None

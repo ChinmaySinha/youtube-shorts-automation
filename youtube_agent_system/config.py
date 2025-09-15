@@ -15,6 +15,7 @@ PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
 # ElevenLabs API for High-Quality TTS
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
+
 # YouTube Data API v3
 YOUTUBE_CLIENT_SECRETS_FILE = "client_secrets.json"
 YOUTUBE_SCOPES = [
@@ -68,6 +69,8 @@ GAMEPLAY_QUERIES = [
 ]
 
 LOCAL_VIDEO_FALLBACK_PATH = r"youtube_agent_system\Minecraft Parkour Gameplay NO COPYRIGHT (Vertical) - Orbital - No Copyright Gameplay (1080p, h264).mp4"
+
+EDGE_TTS_VOICE = "en-US-DavisMultilingualNeural"
 
 # Video settings
 VIDEO_WIDTH = 1080
