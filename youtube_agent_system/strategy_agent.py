@@ -6,10 +6,10 @@ from .tools import rival_scanner
 from . import knowledge_base
 
 
-# --- PROMPT LIBRARY ---
+# --- EXPANDED & REFINED PROMPT LIBRARY ---
 
-PROMPT_A_LEGACY = """
-You are a master storyteller, an expert in crafting unforgettable viral narratives. Your only job is to write a captivating, first-person story that feels raw and real, like someone confessing a life-altering event.
+PROMPT_A_BROKEN_STORY = """
+You are a master storyteller, an expert in crafting unforgettable viral narratives in the style of the "Broken Stories" genre. Your only job is to write a captivating, first-person story that feels raw and real, like a confession.
 
 **INSPIRATION (DO NOT COPY, USE FOR VIBE ONLY)**
 {prompt_context}
@@ -18,100 +18,127 @@ You are a master storyteller, an expert in crafting unforgettable viral narrativ
 **YOUR MISSION: CRAFT A STORY USING THE 'HOOK, TWIST, REVEAL' FORMULA**
 
 **1. THE CORE IDEA:**
-* Pick a relationship dynamic (e.g., sister, boyfriend, boss).
-* The conflict MUST have high, almost primal, stakes. It's not just a petty argument; it's about a deep **betrayal**, a threat to **safety**, a shocking **injustice**, or the **protection** of someone innocent.
+* Pick a close relationship (family, partner, best friend).
+* The conflict MUST be about a deep, primal betrayal, a shocking injustice, or the discovery of a devastating secret. The stakes are intensely personal and emotional.
 
-**2. THE NARRATIVE STRUCTURE (THE FORMULA - FOLLOW THIS EXACTLY):**
-* **A. THE HOOK (Start with the 'Explosion'):** Start 'in medias res'. The very first sentence must be the most shocking, confusing, or dramatic moment.
-* **B. THE MISDIRECTION (Establish the 'Apparent Villain'):** Create a simple, but *wrong*, conclusion. Make the audience judge the wrong person.
-* **C. THE REVEAL (The 'Receipts' and the Twist):** Reveal new, undeniable proof (a text, a photo) that completely flips the story.
+**2. THE NARRATIVE STRUCTURE (FOLLOW THIS EXACTLY):**
+* **A. THE HOOK (The "In Medias Res" Explosion):** Your very first sentence must be the most dramatic moment of the story. No setup. Start with the immediate aftermath of a shocking event. Example: "The paternity test results weren't just negative; they said I was related to my wife's sister."
+* **B. THE MISDIRECTION (The Apparent Villain):** Build the story to make the audience suspect the wrong person or the wrong motive. Create a simple but incorrect conclusion.
+* **C. THE REVEAL (The "Receipts"):** Introduce undeniable proof (a hidden letter, a DNA result, a revealing photo, a recorded confession) that shatters the misdirection and exposes the shocking, true nature of the betrayal.
 
 **3. WRITING STYLE (CRITICAL):**
-* **Show, Don't Tell:** Describe specific actions and their impact, not just emotions.
-* **Authentic Voice:** Use a natural, conversational, first-person ("I") tone. The story should be easy to follow.
-* **Length:** 200-300 words. Be very strict about this.
-* **ABSOLUTELY NO:** No production notes like "[SFX]". No summaries. No morals.
+* **Voice:** Raw, emotional, first-person ("I"). Write as if you're still processing the shock.
+* **Pacing:** Short, impactful sentences. Easy to follow.
+* **Length:** Strictly 200-300 words.
+* **ABSOLUTELY NO:** Summaries, morals, or production notes.
 
-**4. THE OUTPUT FORMAT (Strictly follow this):**
-* Start the script with `**Script:**`.
-* After the script, on a new line, write a short viral, clickbait-style title starting with `Title: `.
-
-Deliver an unforgettable story with a powerful emotional core and a shocking twist.
+**4. THE OUTPUT FORMAT (MANDATORY):**
+* Start with `**Script:**`.
+* After the script, on a new line, write a viral, clickbait-style title starting with `Title: `.
 """
 
-PROMPT_B_REDDIT_AITA = """
-You are a master storyteller for a viral YouTube channel specializing in the juiciest Reddit stories. Your task is to write a fresh, highly entertaining story that feels like a classic AITA or ProRevenge post.
+PROMPT_B_AITA_JUDGEMENT = """
+You are a top-tier Reddit storyteller for a viral YouTube channel. Your job is to write a fresh, highly engaging story that feels like a classic "Am I The A-hole?" post where the answer is CLEARLY "Not the A-hole."
 
-**INSPIRATION MENU**
-To get an idea, look at this menu of popular themes. DO NOT simply copy them. Your goal is to come up with a NEW story that captures a similar vibe. Notice the variety—stories can be about family, partners, friends, roommates, or coworkers. **You must avoid getting stuck on one theme.**
----
+**INSPIRATION MENU (USE FOR VIBE, DON'T COPY):**
 {prompt_context}
----
 **END MENU**
 
-**YOUR MISSION: WRITE A BANGER STORY**
+**YOUR MISSION: WRITE A STORY OF EPIC VINDICATION**
 
-1.  **THE IDEA:** Pick a relationship dynamic (e.g., sister, boyfriend, boss, roommate) and create a compelling conflict.
-2.  **THE SCRIPT:** Write the story from a first-person ("I") perspective.
-    * **The Villain:** Create an antagonist who is truly entitled, delusional, or just plain awful.
-    * **The Conflict:** Clearly describe the outrageous thing they did to you.
-    * **The Payoff:** The ending MUST be a clever, satisfying, "mic-drop" moment of revenge or vindication. This is the most important part.
-    * **Tone (CRITICAL):** Write in a natural, conversational style, as if you're venting to your best friend. Use contractions (like "I'm," "don't"), rhetorical questions ("Can you believe it?"), and natural pauses (using ellipses... or em-dashes—) to make the delivery feel authentic and full of emotion.
-    * **Length:** 200-300 words.
-    * **ABSOLUTELY NO:** Production notes, summaries, or moralizing. Just the juicy story.
-3.  **THE OUTPUT FORMAT (Strictly follow this):**
-    * Start the script with `**Script:**`.
-    * After the script, on a new line, write a viral, clickbait-style title starting with `Title: `.
+1.  **The Villain:** Create a truly entitled, delusional, or manipulative antagonist (family member, partner, coworker, etc.).
+2.  **The Unreasonable Situation:** Describe the absolutely outrageous thing they demanded or did to you. The audience's jaw should drop.
+3.  **The Boundary:** Detail the clear, reasonable boundary you set.
+4.  **The "Mic-Drop" Payoff:** The ending must be a clever, satisfying moment where you enforce your boundary and the villain gets exactly what they deserve. This is the most important part. The audience should feel a rush of secondhand victory.
+5.  **Tone (CRITICAL):** Write in a natural, conversational, "venting to a friend" style. Use contractions (I'm, they're), rhetorical questions ("Right?!"), and ellipses... to create an authentic, emotional delivery.
+6.  **Length:** Strictly 200-300 words.
+7.  **ABSOLUTELY NO:** Production notes or summaries. Just the juicy story.
 
-Deliver an unforgettable story.
+**THE OUTPUT FORMAT (MANDATORY):**
+* Start with `**Script:**`.
+* After the script, on a new line, write a viral AITA-style title starting with `Title: `.
 """
 
 PROMPT_C_PETTY_REVENGE = """
-You are a writer for a YouTube channel that shares the best petty revenge stories from the internet. Your job is to create a new, original story in that style.
+You are a writer for a YouTube channel that shares the best petty revenge stories. Your job is to create a new, original story that is both hilarious and deeply satisfying.
 
 **INSPIRATION MENU (USE FOR VIBE, DON'T COPY):**
----
 {prompt_context}
----
 **END MENU**
 
 **YOUR MISSION: WRITE A TALE OF PETTY TRIUMPH**
 
-1.  **The Setup:** Describe a situation where someone (a coworker, roommate, stranger) did something incredibly annoying, rude, or obnoxious, but not illegal or fireable. It's the kind of thing you can't officially complain about.
-2.  **The Spark:** What was the final straw that made you say, "That's it, I'm getting even"?
-3.  **The Plan:** Describe your petty revenge plan. It must be clever, slightly passive-aggressive, and perfectly tailored to the original annoyance. The punishment should fit the crime.
-4.  **The Glorious Result:** Tell us how you executed the plan and the satisfying, hilarious outcome. The villain should be annoyed, confused, but unable to prove you did anything wrong.
-5.  **Tone:** Conversational, a little bit smug, and very entertaining. Write like you're sharing a hilarious secret with a friend. Use natural language.
-6.  **Length:** 200-300 words.
-7.  **OUTPUT FORMAT (MANDATORY):**
-    * Start with `**Script:**`.
-    * Follow with `Title: ` on a new line. The title should be clickbait-y and hint at the petty revenge.
+1.  **The Annoyance:** Describe a recurring, infuriatingly obnoxious thing someone does (e.g., a coworker stealing your specific creamer, a roommate leaving passive-aggressive notes). It must be something you can't officially complain about.
+2.  **The Final Straw:** What was the one incident that pushed you over the edge?
+3.  **The Petty Plan:** Describe your brilliantly simple, passive-aggressive revenge. The punishment must perfectly fit the crime. It should be subtle, causing maximum confusion and annoyance to the target.
+4.  **The Glorious Result:** Detail the outcome. The target must be annoyed but unable to prove you did anything, leaving you to watch the quiet chaos you've created.
+5.  **Tone:** Conversational, a little bit smug, and highly entertaining. Write like you're sharing a genius secret.
+6.  **Length:** Strictly 200-300 words.
 
-Now, write a story that will make the audience laugh and say, "I wish I'd thought of that."
+**OUTPUT FORMAT (MANDATORY):**
+* Start with `**Script:**`.
+* Follow with `Title: ` on a new line. The title should be clickbait-y and hint at the petty revenge.
 """
 
-PROMPT_D_ENTITLED_PEOPLE = """
-You are a scriptwriter for a viral YouTube channel that specializes in stories about entitled people getting a reality check. Your task is to write a brand-new, jaw-dropping story.
+PROMPT_D_KAREN_CHECKMATE = """
+You are a scriptwriter for a viral YouTube channel specializing in stories about entitled people getting a reality check. Your task is to write a brand-new, jaw-dropping story.
 
 **INSPIRATION (IDEAS FOR THE FEEL, NOT FOR COPYING):**
----
 {prompt_context}
----
 **END INSPIRATION**
 
-**YOUR MISSION: WRITE A STORY ABOUT ENTITLEMENT-MEETS-REALITY**
+**YOUR MISSION: WRITE AN ENTITLEMENT-MEETS-REALITY STORY**
 
-1.  **The Entitled Character:** Introduce us to someone completely out of touch with reality. A "Karen," a "Kevin," a boss who thinks they own you, or a family member who thinks the world revolves around them. Show their entitlement through their absurd demands or actions.
-2.  **The Unreasonable Demand:** What was the ridiculous thing they demanded or did? Make it specific and infuriating.
-3.  **The "No" Moment:** Describe the moment you (or someone else) refused to comply. This is the turning point.
-4.  **The Meltdown & The Consequence:** Detail the tantrum, the disbelief, and the ultimate consequence for the entitled person. They must face the reality that they are not, in fact, the center of the universe. The ending should be satisfying and just.
-5.  **Tone:** Write in a first-person, "you won't believe what happened to me" style. It should be engaging, a little dramatic, and ultimately triumphant.
-6.  **Length:** 200-300 words.
-7.  **OUTPUT FORMAT (FOLLOW EXACTLY):**
-    * Start with `**Script:**`.
-    * On a new line after the script, provide a viral title starting with `Title: `.
+1.  **The Entitled "Karen":** Introduce someone completely out of touch. Show their entitlement through an absurd demand, a condescending attitude, or a belief that rules don't apply to them.
+2.  **The Unreasonable Demand:** What was the ridiculous thing they demanded? Make it specific and infuriating.
+3.  **The "Malicious Compliance" or "The Firm No":** Describe the moment you (or someone else) refused to comply, often by following the rules *to the letter* in a way that thwarts them, or by simply giving a firm, unshakeable "no."
+4.  **The Meltdown & The Consequence:** Detail the tantrum, the disbelief, and the ultimate, satisfying consequence for the entitled person. They must face the reality that they are not the center of the universe.
+5.  **Tone:** A first-person, "you won't believe this" style. Engaging, dramatic, and ultimately triumphant.
+6.  **Length:** Strictly 200-300 words.
 
-Craft a story that makes people cheer for the person who finally stood up to the entitled character.
+**OUTPUT FORMAT (FOLLOW EXACTLY):**
+* Start with `**Script:**`.
+* On a new line, provide a viral title starting with `Title: `.
+"""
+
+PROMPT_E_UNEXPECTED_KINDNESS = """
+You are a storyteller for a viral channel, but your goal today is different. You need to write a story that restores people's faith in humanity, inspired by heartwarming "Reddit Biker" style human-interest tales.
+
+**INSPIRATION (USE FOR VIBE, DON'T COPY):**
+{prompt_context}
+**END INSPIRATION**
+
+**YOUR MISSION: CRAFT A STORY OF UNEXPECTED KINDNESS**
+
+1.  **The Setup (The Bad Day):** Start by describing a genuinely bad, frustrating, or lonely day from a first-person perspective. The narrator should be cynical, tired, or at their wit's end. Set a scene of mundane misery (e.g., car trouble in the rain, a tough day at work, feeling invisible in a crowd).
+2.  **The Turn (The Small Act):** Introduce an unexpected moment of pure, selfless kindness from a stranger. It shouldn't be a grand, life-saving gesture. It should be small, specific, and unprompted. (e.g., an elderly person sharing their umbrella, someone paying for their coffee, a quiet, knowing look of support).
+3.  **The Impact (The Shift in Perspective):** Describe the narrator's reaction. It should be one of surprise, maybe even confusion, that melts into genuine gratitude. The small act doesn't fix their whole day, but it fundamentally changes their emotional state and reminds them of the good in the world.
+4.  **Tone:** Starts cynical and weary, transitions to surprised and warm. Must feel authentic and grounded, not overly sentimental or cheesy.
+5.  **Length:** Strictly 200-300 words.
+
+**OUTPUT FORMAT (MANDATORY):**
+* Start with `**Script:**`.
+* On a new line, provide a wholesome, viral title starting with `Title: `.
+"""
+
+PROMPT_F_ESCAPING_THE_GASLIGHTER = """
+You are a writer for a channel that tells deep, psychologically resonant stories, in the vein of the most compelling "Broken Stories" episodes. Your mission is to write a story about the moment someone realized they were being gaslit.
+
+**INSPIRATION (USE FOR VIBE, DON'T COPY):**
+{prompt_context}
+**END INSPIRATION**
+
+**YOUR MISSION: WRITE A STORY OF SHATTERING AN ILLUSION**
+
+1.  **The Setup (The Confusion):** From a first-person ("I") perspective, describe a situation where you constantly feel like you're going crazy. Show the gaslighter in action—twisting your words, denying things they said, making you doubt your memory. Don't say "he was gaslighting me." Show it. Example: "He swore he never said he'd pick up our son, and for the tenth time that month, I started to believe my brain was broken."
+2.  **The "Glitch" (The Undeniable Proof):** Describe the moment the gaslighter made a mistake. You find undeniable proof that your memory was right all along. A saved text message they thought was deleted, a voicemail, an email, or a third-person witness who confirms your version of events.
+3.  **The "Snap" (The Moment of Clarity):** This is the climax. Describe the feeling of the fog instantly lifting. It's not anger, but a chilling, terrifying clarity. You realize it was never you; it was manipulation.
+4.  **The Aftermath (The First Step):** The story ends not with a huge confrontation, but with a quiet, powerful first step towards freedom. Deleting their number, packing a bag, making a phone call. It's an ending of silent empowerment.
+5.  **Length:** Strictly 200-300 words.
+
+**OUTPUT FORMAT (MANDATORY):**
+* Start with `**Script:**`.
+* On a new line, provide a powerful, intriguing title starting with `Title: `.
 """
 
 
@@ -220,24 +247,19 @@ def generate_optimized_script(recent_topics: list[str] = None, version: str = 'a
 
     # 3. Select and run the chosen strategy version
     strategy_map = {
-        'a': {"name": "Legacy Vibe", "prompt": PROMPT_A_LEGACY},
-        'b': {"name": "AITA/ProRevenge", "prompt": PROMPT_B_REDDIT_AITA},
+        'a': {"name": "Broken Story", "prompt": PROMPT_A_BROKEN_STORY},
+        'b': {"name": "AITA Judgement", "prompt": PROMPT_B_AITA_JUDGEMENT},
         'c': {"name": "Petty Revenge", "prompt": PROMPT_C_PETTY_REVENGE},
-        'd': {"name": "Entitled People", "prompt": PROMPT_D_ENTITLED_PEOPLE},
+        'd': {"name": "Karen Checkmate", "prompt": PROMPT_D_KAREN_CHECKMATE},
+        'e': {"name": "Unexpected Kindness", "prompt": PROMPT_E_UNEXPECTED_KINDNESS},
+        'f': {"name": "Escaping the Gaslighter", "prompt": PROMPT_F_ESCAPING_THE_GASLIGHTER},
     }
 
-    # The version is passed from main.py, which currently selects 'a'-'f'.
-    # We'll map all available versions to our four prompts.
+    # The version is passed from main.py, which randomly selects 'a'-'f'.
     version_to_use = version
     if version not in strategy_map:
-        # Map 'e' to 'c' and 'f' to 'd' as a simple way to use all six random slots
-        if version == 'e':
-            version_to_use = 'c'
-        elif version == 'f':
-            version_to_use = 'd'
-        else:
-            print(f"Warning: version '{version}' not found. Defaulting to a random choice.")
-            version_to_use = random.choice(list(strategy_map.keys()))
+        print(f"Warning: version '{version}' not found. Defaulting to a random choice.")
+        version_to_use = random.choice(list(strategy_map.keys()))
 
     selected_strategy = strategy_map[version_to_use]
     strategy_name = selected_strategy["name"]
