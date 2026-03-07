@@ -15,7 +15,9 @@ to the Strategy Agent for content decisions.
 import json
 from . import config
 from . import knowledge_base
-from .tools import rival_scanner, transcript_analyzer, gemini_analyzer
+from .tools import rival_scanner, transcript_analyzer
+# gemini_analyzer imported lazily in scan_and_analyze_rivals() to avoid
+# crash when google-generativeai isn't installed (e.g. GitHub Actions)
 
 
 class IntelligenceAgent:
