@@ -7,10 +7,9 @@ from . import config
 
 def _get_background_video() -> str | None:
     """
-    Get a background video path. Tries local files first,
-    downloads from Pexels if none found (for cloud/GitHub Actions).
+    Get the local background video (Trackmania gameplay).
+    Looks for any .mp4 in the project directory.
     """
-    # Check for any .mp4 in the project directory
     base_dir = config.BASE_DIR
     for f in os.listdir(base_dir):
         if f.endswith('.mp4') and 'generated' not in f.lower():
@@ -18,45 +17,8 @@ def _get_background_video() -> str | None:
             print(f"  Using local background video: {f}")
             return path
     
-    # No local video found — download from Pexels
-    print("  No local background video found. Downloading from Pexels...")
-    pexels_key = os.getenv('PEXELS_API_KEY', config.PEXELS_API_KEY if hasattr(config, 'PEXELS_API_KEY') else '')
-    
-    if not pexels_key:
-        print("  ERROR: No Pexels API key. Cannot download background video.")
-        return None
-    
-    try:
-        # Search for satisfying/gameplay videos (vertical, HD)
-        headers = {"Authorization": pexels_key}
-        resp = requests.get(
-            "https://api.pexels.com/videos/search",
-            headers=headers,
-            params={"query": "satisfying abstract", "orientation": "portrait", "size": "medium", "per_page": 5}
-        )
-        data = resp.json()
-        
-        if data.get("videos"):
-            video = data["videos"][0]
-            # Get the HD file
-            for vf in video.get("video_files", []):
-                if vf.get("height", 0) >= 720 and vf.get("width", 0) < vf.get("height", 0):
-                    download_url = vf["link"]
-                    break
-            else:
-                download_url = video["video_files"][0]["link"]
-            
-            output_path = os.path.join(base_dir, "generated_assets", "background.mp4")
-            print(f"  Downloading background video...")
-            r = requests.get(download_url, stream=True)
-            with open(output_path, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            print(f"  Downloaded background video to {output_path}")
-            return output_path
-    except Exception as e:
-        print(f"  Failed to download background: {e}")
-    
+    print("  ERROR: No background video (.mp4) found in project directory!")
+    print(f"  Searched in: {base_dir}")
     return None
 
 

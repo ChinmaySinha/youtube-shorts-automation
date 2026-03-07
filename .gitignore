@@ -34,6 +34,5 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Large video files (use Pexels API instead)
-*.mp4
-!youtube_agent_system/generated_assets/.gitkeep
+# Large generated video files only
+youtube_agent_system/generated_assets/*.mp4

@@ -6,16 +6,14 @@ name: Post YouTube Short
 on:
   schedule:
     # 7 slots spread across the day (UTC times)
-    # The post_gate.py script decides how many actually produce videos
     - cron: '30 3 * * *'    # 09:00 IST
     - cron: '30 5 * * *'    # 11:00 IST
-    - cron: '30 8 * * *'    # 14:00 IST (afternoon)
+    - cron: '30 8 * * *'    # 14:00 IST
     - cron: '0 11 * * *'    # 16:30 IST
-    - cron: '30 12 * * *'   # 18:00 IST (evening)
-    - cron: '30 14 * * *'   # 20:00 IST (prime time)
-    - cron: '30 16 * * *'   # 22:00 IST (night)
+    - cron: '30 12 * * *'   # 18:00 IST
+    - cron: '30 14 * * *'   # 20:00 IST
+    - cron: '30 16 * * *'   # 22:00 IST
 
-  # Allow manual trigger for testing
   workflow_dispatch:
 
 jobs:
@@ -24,24 +22,20 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      # --- Checkout code ---
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --- Setup Python ---
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # --- Install system dependencies ---
       - name: Install ffmpeg and ImageMagick
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg imagemagick
           sudo sed -i 's/rights="none" pattern="@\*"/rights="read|write" pattern="@*"/' /etc/ImageMagick-6/policy.xml 2>/dev/null || true
 
-      # --- Cache pip packages ---
       - name: Cache pip packages
         uses: actions/cache@v4
         with:
@@ -50,13 +44,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # --- Install Python dependencies ---
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      # --- Restore credentials from secrets ---
       - name: Restore credentials
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN_B64 }}
@@ -67,7 +59,6 @@ jobs:
           echo "$CLIENT_SECRETS" | base64 -d > youtube_agent_system/client_secrets.json
           echo "$DOTENV_FILE" | base64 -d > youtube_agent_system/.env
 
-      # --- Create required directories ---
       - name: Setup directories
         run: |
           mkdir -p youtube_agent_system/generated_assets
@@ -75,7 +66,18 @@ jobs:
           mkdir -p youtube_agent_system/fonts
           mkdir -p youtube_agent_system/chroma_db
 
-      # --- Restore scheduler state from cache ---
+      # DEBUG: verify we have the right code and files
+      - name: Debug - verify code and files
+        run: |
+          echo "=== Commit SHA ==="
+          git log --oneline -1
+          echo "=== Line 18 of intelligence_agent.py ==="
+          sed -n '18p' youtube_agent_system/intelligence_agent.py
+          echo "=== Background video files ==="
+          ls -la youtube_agent_system/*.mp4 2>/dev/null || echo "NO MP4 FILES FOUND"
+          echo "=== Python version ==="
+          python --version
+
       - name: Restore scheduler state
         uses: actions/cache@v4
         with:
@@ -84,7 +86,6 @@ jobs:
           restore-keys: |
             scheduler-state-
 
-      # --- GATE CHECK: Should we post or skip? ---
       - name: Check if we should post
         id: gate
         run: |
@@ -95,7 +96,6 @@ jobs:
             echo "Gate says SKIP — already hit daily target"
           fi
 
-      # --- Cache ChromaDB (training stories) ---
       - name: Cache ChromaDB
         if: steps.gate.outputs.decision == 'post'
         uses: actions/cache@v4
@@ -105,7 +105,6 @@ jobs:
           restore-keys: |
             chromadb-stories-
 
-      # --- Load training stories if ChromaDB is empty ---
       - name: Load training stories
         if: steps.gate.outputs.decision == 'post'
         run: |
@@ -121,7 +120,6 @@ jobs:
               print('ChromaDB has enough stories, skipping download')
           "
 
-      # --- Run the pipeline ---
       - name: Run video production pipeline
         if: steps.gate.outputs.decision == 'post'
         env:
@@ -135,7 +133,6 @@ jobs:
           python -m youtube_agent_system.main quick 2>&1 | tail -100
           echo "=== Pipeline Complete ==="
 
-      # --- Record result in gate state ---
       - name: Record success
         if: steps.gate.outputs.decision == 'post' && success()
         run: python -m youtube_agent_system.post_gate success
@@ -144,7 +141,6 @@ jobs:
         if: steps.gate.outputs.decision == 'post' && failure()
         run: python -m youtube_agent_system.post_gate failure
 
-      # --- Save scheduler state ---
       - name: Save scheduler state
         if: always()
         uses: actions/cache/save@v4
@@ -152,7 +148,6 @@ jobs:
           path: youtube_agent_system/logs/ga_scheduler_state.json
           key: scheduler-state-${{ github.run_number }}
 
-      # --- Cleanup generated files ---
       - name: Cleanup large files
         if: always()
         run: |
@@ -160,7 +155,6 @@ jobs:
           rm -f youtube_agent_system/generated_assets/*.mp3
           rm -f youtube_agent_system/generated_assets/*.wav
 
-      # --- Upload logs ---
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
