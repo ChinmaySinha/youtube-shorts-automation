@@ -103,13 +103,13 @@ GAMEPLAY_QUERIES = [
 
 LOCAL_VIDEO_FALLBACK_PATH = r"youtube_agent_system\Minecraft Parkour Gameplay NO COPYRIGHT (Vertical) - Orbital - No Copyright Gameplay (1080p, h264).mp4"
 
-EDGE_TTS_VOICE = "en-US-AndrewMultilingualNeural"  # Natural-sounding male voice
+EDGE_TTS_VOICE = "en-US-GuyNeural"  # Deep, natural male voice
 
 # Video settings
 VIDEO_WIDTH = 1080
 VIDEO_HEIGHT = 1920
 VIDEO_FPS = 30
-VIDEO_SPEED = 1.3
+VIDEO_SPEED = 1.5
 
 # Text overlay settings
 TEXT_COLOR = "#1FABAB" 

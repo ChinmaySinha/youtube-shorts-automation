@@ -122,11 +122,6 @@ jobs:
 
       - name: Run video production pipeline
         if: steps.gate.outputs.decision == 'post'
-        env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           echo "=== Starting YouTube Shorts Pipeline ==="
           echo "Time: $(date)"
