@@ -89,7 +89,11 @@ jobs:
       - name: Check if we should post
         id: gate
         run: |
-          if python -m youtube_agent_system.post_gate; then
+          # Always post on manual trigger (workflow_dispatch)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual trigger — always post"
+            echo "decision=post" >> $GITHUB_OUTPUT
+          elif python -m youtube_agent_system.post_gate; then
             echo "decision=post" >> $GITHUB_OUTPUT
           else
             echo "decision=skip" >> $GITHUB_OUTPUT
@@ -123,9 +127,10 @@ jobs:
       - name: Run video production pipeline
         if: steps.gate.outputs.decision == 'post'
         run: |
+          set -eo pipefail
           echo "=== Starting YouTube Shorts Pipeline ==="
           echo "Time: $(date)"
-          python -m youtube_agent_system.main quick 2>&1 | tail -100
+          python -m youtube_agent_system.main quick 2>&1 | tee /tmp/pipeline.log | tail -100
           echo "=== Pipeline Complete ==="
 
       - name: Record success
