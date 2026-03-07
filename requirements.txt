@@ -16,6 +16,9 @@ groq
 requests
 python-dotenv
 
+# Gemini API
+google-generativeai
+
 # LangChain/LangGraph for future agentic orchestration
 langchain
 langgraph
