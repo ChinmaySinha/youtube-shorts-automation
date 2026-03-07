@@ -1,26 +1,27 @@
 # GitHub Actions workflow for automated YouTube Shorts posting
-# Runs 3 times daily on a cron schedule
-# Each run produces and uploads 1 video
+# Runs up to 7 times daily — the gate script decides whether to actually post or skip
 
 name: Post YouTube Short
 
 on:
   schedule:
-    # 3 posts per day at optimal times (UTC)
-    # 06:30 UTC = 12:00 IST (noon)
-    - cron: '30 6 * * *'
-    # 12:30 UTC = 18:00 IST (evening)
-    - cron: '30 12 * * *'
-    # 16:30 UTC = 22:00 IST (night)
-    - cron: '30 16 * * *'
-  
+    # 7 slots spread across the day (UTC times)
+    # The post_gate.py script decides how many actually produce videos
+    - cron: '30 3 * * *'    # 09:00 IST
+    - cron: '30 5 * * *'    # 11:00 IST
+    - cron: '30 8 * * *'    # 14:00 IST (afternoon)
+    - cron: '0 11 * * *'    # 16:30 IST
+    - cron: '30 12 * * *'   # 18:00 IST (evening)
+    - cron: '30 14 * * *'   # 20:00 IST (prime time)
+    - cron: '30 16 * * *'   # 22:00 IST (night)
+
   # Allow manual trigger for testing
   workflow_dispatch:
 
 jobs:
   post-video:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # Safety limit
+    timeout-minutes: 30
 
     steps:
       # --- Checkout code ---
@@ -38,7 +39,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg imagemagick
-          # Fix ImageMagick policy for MoviePy
           sudo sed -i 's/rights="none" pattern="@\*"/rights="read|write" pattern="@*"/' /etc/ImageMagick-6/policy.xml 2>/dev/null || true
 
       # --- Cache pip packages ---
@@ -63,11 +63,8 @@ jobs:
           CLIENT_SECRETS: ${{ secrets.CLIENT_SECRETS_B64 }}
           DOTENV_FILE: ${{ secrets.DOTENV_B64 }}
         run: |
-          # Decode YouTube OAuth token
           echo "$YOUTUBE_TOKEN" | base64 -d > youtube_agent_system/token.pickle
-          # Decode client_secrets.json
           echo "$CLIENT_SECRETS" | base64 -d > youtube_agent_system/client_secrets.json
-          # Decode .env file
           echo "$DOTENV_FILE" | base64 -d > youtube_agent_system/.env
 
       # --- Create required directories ---
@@ -78,8 +75,29 @@ jobs:
           mkdir -p youtube_agent_system/fonts
           mkdir -p youtube_agent_system/chroma_db
 
+      # --- Restore scheduler state from cache ---
+      - name: Restore scheduler state
+        uses: actions/cache@v4
+        with:
+          path: youtube_agent_system/logs/ga_scheduler_state.json
+          key: scheduler-state-${{ github.run_number }}
+          restore-keys: |
+            scheduler-state-
+
+      # --- GATE CHECK: Should we post or skip? ---
+      - name: Check if we should post
+        id: gate
+        run: |
+          if python -m youtube_agent_system.post_gate; then
+            echo "decision=post" >> $GITHUB_OUTPUT
+          else
+            echo "decision=skip" >> $GITHUB_OUTPUT
+            echo "Gate says SKIP — already hit daily target"
+          fi
+
       # --- Cache ChromaDB (training stories) ---
       - name: Cache ChromaDB
+        if: steps.gate.outputs.decision == 'post'
         uses: actions/cache@v4
         with:
           path: youtube_agent_system/chroma_db
@@ -89,6 +107,7 @@ jobs:
 
       # --- Load training stories if ChromaDB is empty ---
       - name: Load training stories
+        if: steps.gate.outputs.decision == 'post'
         run: |
           python -c "
           from youtube_agent_system import knowledge_base
@@ -102,26 +121,9 @@ jobs:
               print('ChromaDB has enough stories, skipping download')
           "
 
-      # --- Download background video (Pexels) ---
-      - name: Download background video
-        env:
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-        run: |
-          python -c "
-          import requests, os
-          api_key = os.getenv('PEXELS_API_KEY', '')
-          if not api_key:
-              print('No Pexels API key, downloading a free stock video...')
-              # Fallback: download a free creative commons video
-              url = 'https://www.pexels.com/download/video/3571264/'
-              # Just create a placeholder - the production agent handles Pexels downloads
-              print('Production agent will handle video downloads via Pexels API')
-          else:
-              print('Pexels API key found, production agent will download backgrounds')
-          "
-
       # --- Run the pipeline ---
       - name: Run video production pipeline
+        if: steps.gate.outputs.decision == 'post'
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
@@ -133,6 +135,23 @@ jobs:
           python -m youtube_agent_system.main quick 2>&1 | tail -100
           echo "=== Pipeline Complete ==="
 
+      # --- Record result in gate state ---
+      - name: Record success
+        if: steps.gate.outputs.decision == 'post' && success()
+        run: python -m youtube_agent_system.post_gate success
+
+      - name: Record failure
+        if: steps.gate.outputs.decision == 'post' && failure()
+        run: python -m youtube_agent_system.post_gate failure
+
+      # --- Save scheduler state ---
+      - name: Save scheduler state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: youtube_agent_system/logs/ga_scheduler_state.json
+          key: scheduler-state-${{ github.run_number }}
+
       # --- Cleanup generated files ---
       - name: Cleanup large files
         if: always()
@@ -140,9 +159,8 @@ jobs:
           rm -f youtube_agent_system/generated_assets/*.mp4
           rm -f youtube_agent_system/generated_assets/*.mp3
           rm -f youtube_agent_system/generated_assets/*.wav
-          echo "Cleaned up generated assets"
 
-      # --- Upload logs as artifact (for debugging) ---
+      # --- Upload logs ---
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
