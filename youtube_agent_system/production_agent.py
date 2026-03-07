@@ -6,7 +6,7 @@ def create_video_from_script(title: str, script: str) -> str | None:
     Orchestrates the entire video production pipeline, now with a title reveal
     and karaoke-style word-by-word subtitles.
     """
-    print("--- 🎬 Production Agent Initialized (Karaoke Style) 🎬 ---")
+    print("--- Production Agent Initialized (Karaoke Style) ---")
 
     # --- Audio Generation ---
     # Step 1a: Generate single audio file for the story WITH WORD TIMESTAMPS
@@ -46,7 +46,7 @@ def create_video_from_script(title: str, script: str) -> str | None:
         print("Production failed: Could not create the final video.")
         return None
 
-    print(f"--- 🎬 Production Agent Finished Successfully! 🎬 ---")
+    print(f"--- Production Agent Finished Successfully! ---")
     print(f"Final video available at: {final_video_path}")
     return final_video_path
 

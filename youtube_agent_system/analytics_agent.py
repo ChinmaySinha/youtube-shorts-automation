@@ -15,7 +15,7 @@ def analyze_video_performance(video_id: str, topic: str) -> str | None:
     Returns:
         A structured string of feedback, or None if no data is found.
     """
-    print(f"--- 🔎 Analytics Agent: Analyzing video '{topic}' (ID: {video_id}) ---")
+    print(f"--- Analytics Agent: Analyzing video '{topic}' (ID: {video_id}) ---")
 
     # 1. Get analytics data from the YouTube tool
     stats = youtube_tools.get_video_analytics(video_id)

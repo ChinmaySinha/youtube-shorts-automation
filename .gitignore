@@ -1,0 +1,39 @@
+# Secrets - NEVER commit these
+youtube_agent_system/.env
+youtube_agent_system/token.pickle
+youtube_agent_system/client_secrets.json
+
+# Generated content
+youtube_agent_system/generated_assets/*.mp4
+youtube_agent_system/generated_assets/*.mp3
+youtube_agent_system/generated_assets/*.wav
+youtube_agent_system/generated_assets/*.png
+youtube_agent_system/generated_assets/training_corpus.json
+
+# ChromaDB (cached via GitHub Actions)
+youtube_agent_system/chroma_db/
+
+# Logs
+youtube_agent_system/logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Large video files (use Pexels API instead)
+*.mp4
+!youtube_agent_system/generated_assets/.gitkeep

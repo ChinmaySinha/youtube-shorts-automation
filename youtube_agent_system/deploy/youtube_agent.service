@@ -1,0 +1,29 @@
+[Unit]
+Description=YouTube Agent - Intelligent Auto-Posting Scheduler
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/youtube_agent_system
+ExecStart=/home/ubuntu/youtube_agent_system/venv/bin/python -m youtube_agent_system.smart_scheduler --min-daily 3 --max-daily 7
+Restart=always
+RestartSec=60
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+# Environment
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/home/ubuntu/youtube_agent_system/youtube_agent_system/.env
+
+# Logging
+StandardOutput=append:/home/ubuntu/youtube_agent_system/youtube_agent_system/logs/service.log
+StandardError=append:/home/ubuntu/youtube_agent_system/youtube_agent_system/logs/service_error.log
+
+# Resource limits (generous for video rendering)
+MemoryMax=20G
+CPUQuota=300%
+
+[Install]
+WantedBy=multi-user.target

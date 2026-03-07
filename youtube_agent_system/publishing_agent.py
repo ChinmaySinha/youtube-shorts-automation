@@ -1,32 +1,65 @@
 from groq import Groq
+import random
 from . import config
 from .tools import youtube_tools
 
-def generate_seo_metadata(topic: str) -> dict:
+def generate_seo_metadata(topic: str, content_category: str = "AITA") -> dict:
     """
-    Uses an LLM to generate YouTube SEO metadata based on a topic.
+    Uses an LLM to generate YouTube Shorts SEO metadata optimized for the
+    Shorts algorithm (categorization via title, description, hashtags, and spoken words).
+    
+    Algorithm insights applied:
+    - #shorts hashtag is mandatory for algorithm recognition
+    - Category-specific hashtags help algorithm match to right audience
+    - Description keywords reinforce content categorization
+    - Title must be hook-y and under 60 chars for mobile display
+    - Engagement CTA drives comments/shares (algorithm ranking signal)
+    - Cross-platform tags boost multi-platform discovery
     """
-    print("--- Generating SEO Metadata ---")
+    print("--- Generating Shorts-Optimized SEO Metadata ---")
     if not config.GROQ_API_KEY:
         return {"error": "GROQ_API_KEY is not configured."}
 
     client = Groq(api_key=config.GROQ_API_KEY)
 
+    # Get category-specific hashtags
+    category_tags = config.SHORTS_CATEGORY_HASHTAGS.get(
+        content_category, config.SHORTS_CATEGORY_HASHTAGS.get("STORIES", [])
+    )
+    default_tags = config.SHORTS_DEFAULT_HASHTAGS
+    
+    # Add cross-platform tags if enabled
+    cross_tags = config.SHORTS_CROSS_PLATFORM_TAGS if config.SHORTS_CROSS_PLATFORM_ENABLED else []
+    
+    # Combine and deduplicate
+    all_hashtags = list(dict.fromkeys(default_tags + category_tags + cross_tags))
+    hashtag_str = " ".join(all_hashtags[:10])  # Max 10 hashtags
+
+    # Select a random engagement CTA for this video
+    engagement_cta = random.choice(config.SHORTS_ENGAGEMENT_CTA_TEMPLATES)
+
     prompt = f"""
-    You are a YouTube SEO expert. Your task is to generate a compelling title, a detailed description,
-    and a list of relevant tags for a short, narrative video about the topic: "{topic}".
+    You are a YouTube Shorts SEO expert who understands the Shorts algorithm.
+    Generate optimized metadata for a Short about: "{topic}"
+    Content category: {content_category}
+
+    **ALGORITHM RULES TO FOLLOW:**
+    1. The Shorts algorithm uses title + description + spoken words to categorize content
+    2. Titles must be under 60 characters, shocking/hook-y for mobile feeds
+    3. Description must include relevant keywords AND hashtags for discovery
+    4. Tags should mix broad discovery terms with niche-specific terms
+    5. Viewer interaction (comments, shares) is a ranking signal — include a question/CTA
 
     **Instructions:**
-    1.  **Title:** Create a short, hook-y, and mysterious title. It should be 60 characters or less. Do NOT use quotes around the title.
-    2.  **Description:** Write a 2-3 sentence description that sets a mood and teases the story's theme without giving away the ending. Include a call to subscribe.
-    3.  **Tags:** Provide a list of 10-15 relevant tags. Include a mix of broad, specific, and thematic tags. The tags should be a comma-separated list.
+    1.  **Title:** Create a short, mysterious, hook-y title. MAX 60 characters. Must make someone STOP scrolling. Do NOT use quotes.
+    2.  **Description:** Write 2-3 punchy sentences that tease the story without spoilers. Then add this engagement line: "{engagement_cta}" Then add: "Like and follow for more!" Finally add this hashtag line: {hashtag_str}
+    3.  **Tags:** Provide 10-15 tags. Include: the story category ({content_category.lower()}), "reddit stories", "shorts", "storytime", plus topic-specific tags. Comma-separated.
 
-    **Output Format:**
-    Provide the output in the following exact format, with no additional text or explanations:
+    **Output Format (exact, no extra text):**
 
-    Title: [Your Generated Title]
-    Description: [Your Generated Description]
-    Tags: [Your Generated Tags, comma, separated]
+    Title: [Your Title]
+    Description: [Your Description]
+    Tags: [tag1, tag2, tag3, ...]
     """
 
     try:
@@ -43,10 +76,23 @@ def generate_seo_metadata(topic: str) -> dict:
         tags_str = response_text.split("Tags:")[1].strip()
         tags = [tag.strip() for tag in tags_str.split(',')]
 
+        # Ensure engagement CTA is in description if LLM missed it
+        if "?" not in description and "!" not in description:
+            description += f"\n\n{engagement_cta}"
+
+        # Ensure hashtags are in description if LLM missed them
+        if "#shorts" not in description.lower():
+            description += f"\n\n{hashtag_str}"
+
+        # Ensure #Shorts tag is always present
+        if "#Shorts" not in tags and "#shorts" not in tags:
+            tags.insert(0, "#Shorts")
+
         metadata = {"title": title, "description": description, "tags": tags}
         print(f"Generated Title: {title}")
-        print(f"Generated Description: {description}")
-        print(f"Generated Tags: {tags}")
+        print(f"Generated Description: {description[:100]}...")
+        print(f"Generated Tags: {tags[:5]}... ({len(tags)} total)")
+        print(f"Engagement CTA: {engagement_cta}")
 
         return metadata
 
@@ -55,14 +101,15 @@ def generate_seo_metadata(topic: str) -> dict:
         return {"error": str(e)}
 
 
-def publish_video(video_path: str, topic: str) -> str | None:
+def publish_video(video_path: str, topic: str, content_category: str = "AITA") -> str | None:
     """
     Orchestrates the publishing process for a video and returns the new video ID.
+    Passes content_category to SEO metadata for Shorts algorithm optimization.
     """
-    print("--- 🚚 Publishing Agent Initialized 🚚 ---")
+    print("--- Publishing Agent Initialized ---")
 
-    # Step 1: Generate SEO metadata
-    metadata = generate_seo_metadata(topic)
+    # Step 1: Generate Shorts-optimized SEO metadata
+    metadata = generate_seo_metadata(topic, content_category=content_category)
     if "error" in metadata:
         print(f"Publishing failed: {metadata['error']}")
         return None
@@ -75,7 +122,7 @@ def publish_video(video_path: str, topic: str) -> str | None:
         tags=metadata["tags"]
     )
 
-    print("--- 🚚 Publishing Agent Finished 🚚 ---")
+    print("--- Publishing Agent Finished ---")
     return video_id # <-- Return the real video ID
 
 

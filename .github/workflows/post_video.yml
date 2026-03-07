@@ -1,0 +1,152 @@
+# GitHub Actions workflow for automated YouTube Shorts posting
+# Runs 3 times daily on a cron schedule
+# Each run produces and uploads 1 video
+
+name: Post YouTube Short
+
+on:
+  schedule:
+    # 3 posts per day at optimal times (UTC)
+    # 06:30 UTC = 12:00 IST (noon)
+    - cron: '30 6 * * *'
+    # 12:30 UTC = 18:00 IST (evening)
+    - cron: '30 12 * * *'
+    # 16:30 UTC = 22:00 IST (night)
+    - cron: '30 16 * * *'
+  
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  post-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # Safety limit
+
+    steps:
+      # --- Checkout code ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- Setup Python ---
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # --- Install system dependencies ---
+      - name: Install ffmpeg and ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg imagemagick
+          # Fix ImageMagick policy for MoviePy
+          sudo sed -i 's/rights="none" pattern="@\*"/rights="read|write" pattern="@*"/' /etc/ImageMagick-6/policy.xml 2>/dev/null || true
+
+      # --- Cache pip packages ---
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # --- Install Python dependencies ---
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # --- Restore credentials from secrets ---
+      - name: Restore credentials
+        env:
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN_B64 }}
+          CLIENT_SECRETS: ${{ secrets.CLIENT_SECRETS_B64 }}
+          DOTENV_FILE: ${{ secrets.DOTENV_B64 }}
+        run: |
+          # Decode YouTube OAuth token
+          echo "$YOUTUBE_TOKEN" | base64 -d > youtube_agent_system/token.pickle
+          # Decode client_secrets.json
+          echo "$CLIENT_SECRETS" | base64 -d > youtube_agent_system/client_secrets.json
+          # Decode .env file
+          echo "$DOTENV_FILE" | base64 -d > youtube_agent_system/.env
+
+      # --- Create required directories ---
+      - name: Setup directories
+        run: |
+          mkdir -p youtube_agent_system/generated_assets
+          mkdir -p youtube_agent_system/logs
+          mkdir -p youtube_agent_system/fonts
+          mkdir -p youtube_agent_system/chroma_db
+
+      # --- Cache ChromaDB (training stories) ---
+      - name: Cache ChromaDB
+        uses: actions/cache@v4
+        with:
+          path: youtube_agent_system/chroma_db
+          key: chromadb-stories-v1
+          restore-keys: |
+            chromadb-stories-
+
+      # --- Load training stories if ChromaDB is empty ---
+      - name: Load training stories
+        run: |
+          python -c "
+          from youtube_agent_system import knowledge_base
+          count = knowledge_base.get_training_story_count()
+          print(f'Training stories in ChromaDB: {count}')
+          if count < 100:
+              print('ChromaDB is empty, running training pipeline...')
+              from youtube_agent_system.train_story_model import run_training_pipeline
+              run_training_pipeline(max_download=3000, top_n=2000, min_quality=3.0)
+          else:
+              print('ChromaDB has enough stories, skipping download')
+          "
+
+      # --- Download background video (Pexels) ---
+      - name: Download background video
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+        run: |
+          python -c "
+          import requests, os
+          api_key = os.getenv('PEXELS_API_KEY', '')
+          if not api_key:
+              print('No Pexels API key, downloading a free stock video...')
+              # Fallback: download a free creative commons video
+              url = 'https://www.pexels.com/download/video/3571264/'
+              # Just create a placeholder - the production agent handles Pexels downloads
+              print('Production agent will handle video downloads via Pexels API')
+          else:
+              print('Pexels API key found, production agent will download backgrounds')
+          "
+
+      # --- Run the pipeline ---
+      - name: Run video production pipeline
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "=== Starting YouTube Shorts Pipeline ==="
+          echo "Time: $(date)"
+          python -m youtube_agent_system.main quick 2>&1 | tail -100
+          echo "=== Pipeline Complete ==="
+
+      # --- Cleanup generated files ---
+      - name: Cleanup large files
+        if: always()
+        run: |
+          rm -f youtube_agent_system/generated_assets/*.mp4
+          rm -f youtube_agent_system/generated_assets/*.mp3
+          rm -f youtube_agent_system/generated_assets/*.wav
+          echo "Cleaned up generated assets"
+
+      # --- Upload logs as artifact (for debugging) ---
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-logs-${{ github.run_number }}
+          path: youtube_agent_system/logs/
+          retention-days: 7

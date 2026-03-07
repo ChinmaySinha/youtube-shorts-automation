@@ -25,3 +25,9 @@ chromadb
 
 # YouTube metadata scraping
 yt-dlp
+
+# HuggingFace datasets for story training data
+datasets
+
+# Reddit API
+praw

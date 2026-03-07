@@ -191,9 +191,7 @@ def _run_openai_prompt(prompt_template: str, prompt_context: str, strategy_name:
             messages=[{"role": "user", "content": final_prompt}],
             model="openai/gpt-oss-120b",
             temperature=1.0,
-            top_p=1,
-            reasoning_effort="high",
-            tools=[{"type":"browser_search"}]
+            top_p=0.95,
         )
         response_text = chat_completion.choices[0].message.content.strip()
         return _clean_and_parse_response(response_text)
@@ -203,16 +201,238 @@ def _run_openai_prompt(prompt_template: str, prompt_context: str, strategy_name:
         traceback.print_exc()
         return None
 
-# --- MAIN DISPATCHER FUNCTION (To be fully implemented in next steps) ---
-def generate_optimized_script(recent_topics: list[str] = None, version: str = 'a') -> dict | None:
+# --- MAIN DISPATCHER FUNCTION (Enhanced with Intelligence Agent) ---
+def generate_optimized_script(recent_topics: list[str] = None, version: str = None, use_intelligence: bool = True) -> dict | None:
     """
-    Selects a strategy version, generates a script, and returns the result.
-    This is the single entry point called by main.py.
+    Generates an optimized script using either:
+    1. Intelligence Mode (default): Uses learned patterns from rival analysis
+    2. Version Mode: Uses one of the 6 predefined prompts (A-F)
+    
+    Args:
+        recent_topics: List of recently covered topics to avoid.
+        version: If provided, forces a specific version (a-f). Ignored if use_intelligence=True.
+        use_intelligence: If True, uses learned patterns. If False, uses version mode.
+        
+    Returns:
+        Dictionary with 'script', 'title', and 'patterns_used' keys.
     """
-    print("--- 🤔 Reddit Story Strategy Agent: Generating optimized script... ---")
+    print("--- Strategy Agent: Generating optimized script... ---")
+    
+    # Determine which mode to use
+    if use_intelligence:
+        return _generate_with_intelligence(recent_topics)
+    else:
+        return _generate_with_version(recent_topics, version or 'a')
 
+
+def _generate_with_intelligence(recent_topics: list[str] = None) -> dict | None:
+    """
+    Generates a script based on a REAL Reddit story from our training database.
+    
+    Instead of asking the LLM to invent a story (which produces generic output),
+    this retrieves a real viral Reddit story from ChromaDB and has the LLM
+    adapt/polish it into a narration-ready script.
+    
+    This is what successful channels like Broken.Stories actually do —
+    they narrate real Reddit stories, not AI-generated ones.
+    """
+    print("--- Strategy Agent: Using INTELLIGENT mode (real story + adaptation) ---")
+    
+    # Import here to avoid circular imports
+    from . import intelligence_agent
+    
+    # Get content recommendation from Intelligence Agent
+    ia = intelligence_agent.IntelligenceAgent()
+    recommendation = ia.get_content_recommendation()
+    
+    content_category = recommendation.get('content_category', 'AITA')
+    print(f"--- Recommendation received: {content_category} ---")
+    print(f"--- Confidence: {recommendation.get('confidence', 0):.0%} ---")
+    
+    # === KEY CHANGE: Retrieve a REAL story from our training database ===
+    real_story = knowledge_base.get_random_training_story(category=content_category)
+    
+    if not real_story or not real_story.get('body') or len(real_story['body'].strip()) < 100:
+        print("--- No suitable real story found, trying without category filter ---")
+        real_story = knowledge_base.get_random_training_story(category=None)
+    
+    if not real_story or not real_story.get('body') or len(real_story['body'].strip()) < 100:
+        print("--- [WARN] No real stories available, falling back to generated mode ---")
+        return _generate_with_version(recent_topics, random.choice(['a', 'b', 'c', 'd', 'e', 'f']))
+    
+    # Check if this story was recently used
+    if recent_topics and real_story.get('title') in recent_topics:
+        print("--- Story was recently used, getting another ---")
+        real_story = knowledge_base.get_random_training_story(category=content_category)
+
+    print(f"--- Using real story: '{real_story['title'][:70]}...' ---")
+    print(f"--- Category: {real_story['category']}, Words: {real_story['word_count']} ---")
+    
+    # === Have the LLM ADAPT the real story for narration ===
+    adaptation_prompt = f"""You are a skilled narrator who adapts real Reddit stories for YouTube Shorts narration.
+
+**YOUR TASK:** Take the following REAL Reddit story and adapt it into a polished, narration-ready script.
+
+**THE REAL STORY:**
+Title: {real_story['title']}
+Category: {real_story['category']}
+
+{real_story['body'][:2000]}
+
+**ADAPTATION RULES:**
+1. **Keep the core story INTACT** -- do NOT change the events, characters, or outcome. This is a REAL story.
+2. **First-person narration** -- rewrite in first person ("I") if not already.
+3. **Start with the most dramatic moment** -- your first sentence (max 15 words) must be the hook that grabs attention instantly. Pull the most shocking/dramatic moment to the front.
+4. **Clean up for narration** -- remove Reddit formatting, acronyms (explain them naturally), paragraph breaks, and edit markers. Make it flow as spoken word.
+5. **Keep it {config.SHORTS_MIN_WORDS}-{config.SHORTS_MAX_WORDS} words** -- trim filler, tighten sentences, but preserve all key story beats.
+6. **Conversational tone** -- use contractions (I'm, they're, don't), rhetorical questions, and natural pauses (...).
+7. **Strong ending** -- the final line should be a mic-drop, a twist callback, or an emotional gut-punch.
+
+**ABSOLUTELY DO NOT:**
+- Invent new events or details that aren't in the original story
+- Add morals, lessons, or preachy commentary  
+- Use hashtags, emojis, or production notes
+- Start with "So..." or "Well..." or any generic opener
+
+**OUTPUT FORMAT (MANDATORY):**
+Start with `**Script:**`
+After the script, on a new line, write a viral title starting with `Title: `
+The title should be short (<60 chars), hook-y, and make people STOP scrolling.
+"""
+
+    try:
+        client = Groq(api_key=config.GROQ_API_KEY)
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": adaptation_prompt}],
+            model="openai/gpt-oss-120b",
+            temperature=0.7,  # Lower temp for adaptation (stay faithful)
+            top_p=0.95,
+        )
+        response_text = chat_completion.choices[0].message.content.strip()
+        result = _clean_and_parse_response(response_text)
+    except Exception as e:
+        import traceback
+        print(f"Error during story adaptation: {e}")
+        traceback.print_exc()
+        result = None
+    
+    if result and result.get('script') and len(result['script']) > 50:
+        # Track which patterns were used
+        result['patterns_used'] = {
+            'mode': 'intelligent',
+            'content_category': real_story.get('category', content_category),
+            'hook_technique': recommendation.get('hook_style', ''),
+            'payoff_type': recommendation.get('payoff_type', ''),
+            'confidence': recommendation.get('confidence', 0),
+            'source_story': real_story.get('title', '')[:80],
+            'source_type': 'real_reddit_story',
+        }
+        print(f"--- [OK] Real story adapted successfully! ---")
+        print(f"Title: {result['title']}")
+        return result
+    
+    # Fallback to version mode if adaptation fails
+    print("--- [WARN] Story adaptation failed, falling back to version mode ---")
+    return _generate_with_version(recent_topics, random.choice(['a', 'b', 'c', 'd', 'e', 'f']))
+
+
+def _build_dynamic_prompt(recommendation: dict, recent_topics: list[str] = None) -> str:
+    """
+    Builds a dynamic prompt template based on learned patterns AND
+    YouTube Shorts algorithm insights (Explore/Exploit phases).
+    
+    Algorithm-aware enhancements:
+    - First 3 seconds = seed audience retention (make-or-break)
+    - Spoken keywords in opening help algorithm categorize content
+    - Story pacing optimized for 50-60 second target duration
+    """
+    content_category = recommendation.get('content_category', 'AITA')
+    hook_style = recommendation.get('hook_style', 'shocking revelation')
+    payoff_type = recommendation.get('payoff_type', 'justice served')
+    target_emotion = recommendation.get('target_emotion', 'satisfaction')
+    
+    prompt = f"""
+You are a master storyteller specializing in viral YouTube Shorts content. Based on analysis of successful videos AND the YouTube Shorts algorithm mechanics, we know exactly what works.
+
+**LEARNED INSIGHTS (Follow these patterns):**
+{{prompt_context}}
+
+**YOUTUBE SHORTS ALGORITHM KNOWLEDGE (CRITICAL):**
+The Shorts algorithm works in two phases:
+1. EXPLORE: Your Short is shown to a small "seed audience" first
+2. EXPLOIT: If the seed audience engages, it gets pushed to millions
+
+The seed audience verdict is decided in the FIRST 3 SECONDS. If viewers swipe away in those 3 seconds, your Short dies. If they stay, it explodes.
+
+Additionally, every replay/loop counts as a new view, so stories that make people want to watch again perform exponentially better. Aim for a twist or payoff that makes viewers replay.
+
+**YOUR MISSION:**
+Write a captivating, first-person story optimized for the Shorts algorithm:
+
+**1. CONTENT CATEGORY:** {content_category}
+Write a story that fits this category. Examples:
+- AITA: "Am I The A-hole" judgment stories
+- REVENGE: Satisfying revenge/karma stories
+- FAMILY_DRAMA: Family secrets, betrayals, revelations
+- RELATIONSHIP: Partner drama, dating disasters
+- WORKPLACE: Boss/coworker conflicts
+
+**2. THE HOOK (FIRST 3 SECONDS = LIFE OR DEATH):**
+Use the "{hook_style}" technique.
+Your FIRST SENTENCE (max 12-15 words) must be so shocking, intriguing, or emotionally gripping that viewers CANNOT swipe away. This is the single most important part of the entire script.
+
+Examples of killer hooks:
+- "The DNA test didn't just prove he wasn't mine -- it proved he was my brother's."
+- "I found my mother-in-law's diary, and the first page was about how to destroy my marriage."
+- "My boss fired me on Monday. By Friday, I owned his parking spot."
+
+DO NOT: Start with "So...", "Well...", "For context...", or any setup.
+DO: Start with the most dramatic moment, a shocking fact, or a jaw-dropping revelation.
+
+**3. ALGORITHM HACK -- SPOKEN KEYWORDS:**
+The Shorts algorithm listens to the words spoken in the first few seconds to categorize your content. Naturally weave the topic keyword into your opening sentence. For example, if the story is about revenge, say the word "revenge" in the first line. If it's family drama, mention "mother-in-law" or "family" early.
+
+**4. STORY STRUCTURE (Optimized for 50-60 second Shorts):**
+- **[0-3 sec]** THE HOOK: Explosive opening sentence (max 15 words)
+- **[3-15 sec]** QUICK SETUP: 2-3 sentences establishing the situation
+- **[15-40 sec]** THE CONFLICT: Build tension, show the drama unfolding
+- **[40-55 sec]** THE PAYOFF: End with a "{payoff_type}" resolution
+- **[55-60 sec]** THE REPLAY TRIGGER: Final line should make viewers want to rewatch (a callback, a chilling detail, or a mic-drop moment)
+
+**5. EMOTIONAL JOURNEY:**
+Your story should leave the reader feeling: {target_emotion}
+Build towards this emotional payoff throughout.
+
+**6. WRITING STYLE:**
+- First-person narrative ("I")
+- Conversational, natural voice
+- Short, punchy sentences for visual subtitle impact
+- {config.SHORTS_MIN_WORDS}-{config.SHORTS_MAX_WORDS} words STRICTLY (targets ~60 second Short)
+- Use contractions (I'm, they're, don't)
+- Include rhetorical questions and natural pauses (...)
+
+**ABSOLUTELY NO:**
+- Summaries or morals
+- Generic filler phrases
+- Production notes, hashtags, or emojis
+
+**OUTPUT FORMAT (MANDATORY):**
+Start with `**Script:**`
+After the script, on a new line, write a viral title starting with `Title: `
+"""
+    
+    return prompt
+
+
+def _generate_with_version(recent_topics: list[str] = None, version: str = 'a') -> dict | None:
+    """
+    Generates a script using one of the 6 predefined prompt versions.
+    
+    This is the ORIGINAL mode, kept for backward compatibility and fallback.
+    """
+    print(f"--- Strategy Agent: Using VERSION mode ({version.upper()}) ---")
+    
     # 1. Gather all data sources
-    print("--- 🧠 Knowledge Base: Retrieving all insights ---")
     our_insights = knowledge_base.get_all_insights()
     rival_intel = []
     for channel_url in config.RIVAL_CHANNEL_URLS:
@@ -222,7 +442,7 @@ def generate_optimized_script(recent_topics: list[str] = None, version: str = 'a
             rival_intel.extend(channel_intel)
     
     if rival_intel:
-        rival_intel.sort(key=lambda x: x['views'], reverse=True)
+        rival_intel.sort(key=lambda x: x['views'] or 0, reverse=True)
 
     # 2. Construct the base prompt context
     prompt_context = "PAST VIDEO PERFORMANCE:\n"
@@ -233,7 +453,7 @@ def generate_optimized_script(recent_topics: list[str] = None, version: str = 'a
 
     prompt_context += "\n\nPOPULAR THEMES FROM OTHER CHANNELS:\n"
     if rival_intel:
-        for video in rival_intel[:4]: # Get top 4 videos
+        for video in rival_intel[:4]:
             prompt_context += f"- {video['title']} ({video['views']} views)\n"
     else:
         prompt_context += "No rival data available.\n"
@@ -255,7 +475,6 @@ def generate_optimized_script(recent_topics: list[str] = None, version: str = 'a
         'f': {"name": "Escaping the Gaslighter", "prompt": PROMPT_F_ESCAPING_THE_GASLIGHTER},
     }
 
-    # The version is passed from main.py, which randomly selects 'a'-'f'.
     version_to_use = version
     if version not in strategy_map:
         print(f"Warning: version '{version}' not found. Defaulting to a random choice.")
@@ -274,6 +493,12 @@ def generate_optimized_script(recent_topics: list[str] = None, version: str = 'a
     )
     
     if result:
+        # Track which patterns were used
+        result['patterns_used'] = {
+            'mode': 'version',
+            'version': version_to_use,
+            'strategy_name': strategy_name
+        }
         print(f"--- Strategy Agent successfully generated new content! ---")
         print(f"Title: {result['title']}")
         return result

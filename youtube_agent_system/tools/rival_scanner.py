@@ -1,92 +1,82 @@
+# youtube_agent_system/tools/rival_scanner.py
 import yt_dlp
-
-def get_video_title(url: str) -> str | None:
-    """
-    (Legacy) Extracts the title of a single YouTube video from its URL.
-    """
-    ydl_opts = {'quiet': True, 'no_warnings': True, 'skip_download': True}
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            return info.get('title', None)
-    except Exception as e:
-        print(f"Error scanning single URL '{url}': {e}")
-        return None
 
 def get_channel_shorts_info(channel_url: str, playlist_end: int = 5) -> list[dict] | None:
     """
-    Scrapes a YouTube channel for recent video titles and view counts.
-    It first tries the /shorts feed, and if that fails, it falls back to the /videos feed.
-
-    Args:
-        channel_url: The URL of the YouTube channel.
-        playlist_end: The number of recent videos to scrape (default 5).
-
-    Returns:
-        A list of dictionaries, each containing 'title' and 'views', or None on error.
+    Scans a YouTube channel for Shorts and returns their titles and view counts.
     """
-    # URLs to attempt, in order of preference
-    channel_feeds = [
-        channel_url.rstrip('/') + '/shorts',
-        channel_url.rstrip('/') + '/videos'
-    ]
+    if "/shorts" not in channel_url:
+        shorts_url = f"{channel_url}/shorts"
+    else:
+        shorts_url = channel_url
 
+    # --- UPDATED: More flexible ydl_opts ---
     ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'extract_flat': 'in_playlist',
         'playlistend': playlist_end,
-        'skip_download': True,
+        'extract_flat': True,
+        'quiet': True,
+        'force_generic_extractor': True,
+        'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]', # More flexible format selection
     }
 
-    for feed_url in channel_feeds:
-        print(f"--- Scanning rival channel feed: {feed_url} ---")
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                playlist_dict = ydl.extract_info(feed_url, download=False)
-
-                video_infos = []
-                if 'entries' in playlist_dict and playlist_dict['entries']:
-                    for video in playlist_dict['entries']:
-                        # A second call is needed to get the view_count
-                        video_details = ydl.extract_info(video['url'], download=False)
-                        title = video_details.get('title')
-                        view_count = video_details.get('view_count')
-
-                        if title and view_count is not None:
-                            video_infos.append({'title': title, 'views': view_count})
-                            print(f"Found rival video: '{title}' ({view_count} views)")
-                    
-                    video_infos.sort(key=lambda x: x['views'], reverse=True)
-                    return video_infos
-                else:
-                    print(f"Could not find any videos for feed: {feed_url}")
-        
-        except yt_dlp.utils.DownloadError as e:
-            if "This channel does not have a shorts tab" in str(e):
-                print(f"Channel does not have a shorts tab. Trying the main videos feed...")
-                continue
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(shorts_url, download=False)
+            
+            if 'entries' in info and info['entries']:
+                videos_info = []
+                for entry in info['entries']:
+                    if entry:
+                        videos_info.append({
+                            'title': entry.get('title'),
+                            'views': entry.get('view_count'),
+                        })
+                return videos_info
             else:
-                print(f"An unexpected download error occurred while scanning '{feed_url}': {e}")
-                return None
-        except Exception as e:
-            print(f"An unexpected error occurred while scanning '{feed_url}': {e}")
+                return None # No shorts found or channel structure is different
+
+    except yt_dlp.utils.DownloadError as e:
+        # This error often means the /shorts tab doesn't exist
+        if "channel does not have a shorts tab" in str(e):
+            print("Channel does not have a shorts tab. Trying the main videos feed...")
+            return _get_videos_from_main_feed(channel_url, playlist_end)
+        else:
+            print(f"An unexpected download error occurred while scanning '{channel_url}': {e}")
             return None
+    except Exception as e:
+        print(f"An unexpected error occurred while scanning '{channel_url}': {e}")
+        return None
 
-    print(f"Could not retrieve videos from any feed for channel: {channel_url}")
-    return None
+def _get_videos_from_main_feed(channel_url: str, playlist_end: int = 5) -> list[dict] | None:
+    """
+    Fallback function to get videos from the main /videos feed if /shorts fails.
+    """
+    videos_url = f"{channel_url}/videos"
+    
+    # --- UPDATED: More flexible ydl_opts for fallback ---
+    ydl_opts = {
+        'playlistend': playlist_end,
+        'extract_flat': True,
+        'quiet': True,
+        'force_generic_extractor': True,
+        'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
+    }
 
-if __name__ == '__main__':
-    test_channel_1 = "https://www.youtube.com/@Broken.Stories"
-    videos_1 = get_channel_shorts_info(test_channel_1, playlist_end=5)
-    if videos_1:
-        print("\n--- Successfully extracted from channel 1 ---")
-        for video in videos_1:
-            print(f"Title: {video['title']}, Views: {video['views']}")
-
-    test_channel_2 = "https://www.youtube.com/@MrBeast"
-    videos_2 = get_channel_shorts_info(test_channel_2, playlist_end=5)
-    if videos_2:
-        print("\n--- Successfully extracted from channel 2 ---")
-        for video in videos_2:
-            print(f"Title: {video['title']}, Views: {video['views']}")
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(videos_url, download=False)
+            
+            if 'entries' in info and info['entries']:
+                videos_info = []
+                for entry in info['entries']:
+                    if entry:
+                        print(f"Found rival video: '{entry.get('title')}' ({entry.get('view_count')} views)")
+                        videos_info.append({
+                            'title': entry.get('title'),
+                            'views': entry.get('view_count'),
+                        })
+                return videos_info
+            return None
+    except Exception as e:
+        print(f"An unexpected download error occurred while scanning '{videos_url}': {e}")
+        return None

@@ -358,7 +358,123 @@
     {
         "video_id": "lOjnCdDI9xU",
         "topic": "AITA for refusing an illegal eviction and exposing my landlord\u2019s dangerous building violations?",
-        "analyzed": false,
+        "analyzed": true,
         "version": "b"
+    },
+    {
+        "video_id": "1g6tMa9O2D0",
+        "topic": "A Rainy Morning, A Stranger\u2019s Scarf, and the Unexpected Warmth That Saved My Day",
+        "analyzed": true,
+        "version": "e"
+    },
+    {
+        "video_id": "VWPGkcu6e9k",
+        "topic": "I Ruined My Sister\u2019s Wedding After She Stole My Inheritance \u2013 Shocking Proof Inside!",
+        "analyzed": true,
+        "version": "a"
+    },
+    {
+        "video_id": "tQUz_Pxgrj4",
+        "topic": "I Exposed My Girlfriend\u2019s \u201cCheating\u201d at Her Birthday Party\u2014The Truth Was a Corporate Conspiracy",
+        "analyzed": true,
+        "version": "a"
+    },
+    {
+        "video_id": "9wZz5ygePrc",
+        "topic": "AITA for replacing my roommate's new iPhone with a dollar store dummy after she bought it with my money without permission?",
+        "analyzed": true,
+        "version": "b"
+    },
+    {
+        "video_id": "xaZIgMLsIR4",
+        "topic": "AI Generated Story",
+        "analyzed": true,
+        "version": "f"
+    },
+    {
+        "video_id": "uqW1Hg-IECI",
+        "topic": "AITA for replacing my sister's laptop with a fake one after she ruined mine?",
+        "analyzed": true,
+        "version": "b"
+    },
+    {
+        "video_id": "59iQ3Fvcfmo",
+        "topic": "AITA for giving my entitled cousin a fake wedding dress that split open at my wedding?",
+        "analyzed": true,
+        "version": "b"
+    },
+    {
+        "video_id": "RaKeKQhXeNw",
+        "topic": "\"I Exposed My Best Friend\u2019s Betrayal, But the Real Mastermind Left Me Speechless\"",
+        "analyzed": true,
+        "version": "a"
+    },
+    {
+        "video_id": "HORvF6aw0c4",
+        "topic": "AITA for giving my sister a junk car after she crashed mine and demanded a new one?",
+        "analyzed": true,
+        "version": "b"
+    },
+    {
+        "video_id": "zWDPDfClsUg",
+        "topic": "I Caught My Coworker Stealing My Idea\u2014Instant Karma Served!",
+        "analyzed": true,
+        "patterns_used": {
+            "mode": "intelligent",
+            "content_category": "REVENGE",
+            "hook_technique": "mystery question",
+            "payoff_type": "justice served",
+            "confidence": 1.0
+        }
+    },
+    {
+        "video_id": "4kk5AarmS7M",
+        "topic": "I Swapped My Sister's Fake Leica for the Real One\u2014Instant Karma!",
+        "analyzed": true,
+        "patterns_used": {
+            "mode": "intelligent",
+            "content_category": "OTHER",
+            "hook_technique": "mystery question",
+            "payoff_type": "revenge satisfied",
+            "confidence": 1.0
+        }
+    },
+    {
+        "video_id": "ePFkeBn6s50",
+        "topic": "I Exposed My Dad\u2019s Secret Gambling Ring and Got Sweet Karma",
+        "analyzed": true,
+        "patterns_used": {
+            "mode": "intelligent",
+            "content_category": "OTHER",
+            "hook_technique": "mystery question",
+            "payoff_type": "revenge satisfied",
+            "confidence": 1.0
+        }
+    },
+    {
+        "video_id": "9jjwwqJnYs0",
+        "topic": "The Salted Dinner That Exposed My Neighbor\u2019s Cheat and Served Sweet Revenge",
+        "analyzed": true,
+        "patterns_used": {
+            "mode": "intelligent",
+            "content_category": "REVENGE",
+            "hook_technique": "mystery question",
+            "payoff_type": "revenge satisfied",
+            "confidence": 1.0
+        }
+    },
+    {
+        "video_id": "WtLi-DPiFy0",
+        "topic": "Revenge in Third Grade: The Pencil Thief Gets Her Comeuppance",
+        "analyzed": false,
+        "patterns_used": {
+            "mode": "intelligent",
+            "content_category": "REVENGE",
+            "hook_technique": "mystery question",
+            "payoff_type": "revenge satisfied",
+            "confidence": 1.0,
+            "source_story": "I got the whole class in trouble and because some idiot stole pencils",
+            "source_type": "real_reddit_story"
+        }
     }
 ]
