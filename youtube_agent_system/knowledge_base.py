@@ -948,10 +948,10 @@ def get_random_training_story(category: str = None) -> dict | None:
         ]
         random_query = random.choice(random_queries)
         
-        # Query more than we need so we can pick randomly from results
+        # Query more than we need so we can pick the BEST ones
         query_params = {
             'query_texts': [random_query],
-            'n_results': min(20, count),
+            'n_results': min(50, count),
             'include': ['documents', 'metadatas']
         }
         
@@ -971,8 +971,23 @@ def get_random_training_story(category: str = None) -> dict | None:
             else:
                 return None
         
-        # Pick a random result from the returned set
-        idx = random.randint(0, len(results['ids'][0]) - 1)
+        # Sort by quality score and pick from the TOP stories
+        scored_indices = []
+        for j in range(len(results['ids'][0])):
+            meta = results['metadatas'][0][j] if results.get('metadatas') else {}
+            score = meta.get('quality_score', 0)
+            wc = meta.get('word_count', 0)
+            # Prefer stories with good scores AND reasonable length
+            if isinstance(score, (int, float)) and wc > 80:
+                scored_indices.append((j, score))
+        
+        if scored_indices:
+            # Sort by quality score descending, pick randomly from top 10
+            scored_indices.sort(key=lambda x: x[1], reverse=True)
+            top_n = scored_indices[:min(10, len(scored_indices))]
+            idx = random.choice(top_n)[0]
+        else:
+            idx = random.randint(0, len(results['ids'][0]) - 1)
         
         doc = results['documents'][0][idx] if results.get('documents') else ''
         metadata = results['metadatas'][0][idx] if results.get('metadatas') else {}
