@@ -103,13 +103,18 @@ GAMEPLAY_QUERIES = [
 
 LOCAL_VIDEO_FALLBACK_PATH = r"youtube_agent_system\Minecraft Parkour Gameplay NO COPYRIGHT (Vertical) - Orbital - No Copyright Gameplay (1080p, h264).mp4"
 
-EDGE_TTS_VOICE = "en-US-GuyNeural"  # Deep, natural male voice
+EDGE_TTS_VOICE = "en-US-GuyNeural"  # Fallback voice
+
+# NVIDIA Riva TTS (Magpie) - higher quality
+NVIDIA_TTS_VOICE = "Magpie-Multilingual.EN-US.Leo"
+NVIDIA_TTS_SERVER = "grpc.nvcf.nvidia.com:443"
+NVIDIA_TTS_FUNCTION_ID = "877104f7-e885-42b9-8de8-f6e4c6303969"
 
 # Video settings
 VIDEO_WIDTH = 1080
 VIDEO_HEIGHT = 1920
 VIDEO_FPS = 30
-VIDEO_SPEED = 1.35
+VIDEO_SPEED = 1.3
 
 # Text overlay settings
 TEXT_COLOR = "#1FABAB" 

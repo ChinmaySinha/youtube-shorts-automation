@@ -18,6 +18,7 @@ python-dotenv
 
 # Gemini API
 google-generativeai
+nvidia-riva-client
 
 # LangChain/LangGraph for future agentic orchestration
 langchain

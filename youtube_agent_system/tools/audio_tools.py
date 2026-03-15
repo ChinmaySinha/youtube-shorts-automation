@@ -8,6 +8,55 @@ import whisper_timestamped as whisper
 from moviepy.editor import AudioFileClip
 from .. import config
 
+def _generate_nvidia_tts(text: str, output_path: str) -> bool:
+    """Generate audio using NVIDIA Riva Magpie TTS via gRPC. Returns True on success."""
+    try:
+        import riva.client
+        import riva.client.proto.riva_tts_pb2 as riva_tts
+        
+        api_key = os.getenv("NVIDIA_API_KEY", "")
+        if not api_key:
+            print("  NVIDIA API key not found, skipping NVIDIA TTS")
+            return False
+        
+        metadata = [
+            ("function-id", config.NVIDIA_TTS_FUNCTION_ID),
+            ("authorization", f"Bearer {api_key}")
+        ]
+        
+        auth = riva.client.Auth(
+            use_ssl=True,
+            uri=config.NVIDIA_TTS_SERVER,
+            metadata_args=metadata
+        )
+        
+        tts_service = riva.client.SpeechSynthesisService(auth)
+        
+        resp = tts_service.synthesize(
+            text=text,
+            voice_name=config.NVIDIA_TTS_VOICE,
+            language_code="en-US",
+            encoding=riva.client.AudioEncoding.LINEAR_PCM,
+            sample_rate_hz=44100
+        )
+        
+        # Write WAV file
+        import wave
+        with wave.open(output_path, 'wb') as wav_file:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)  # 16-bit
+            wav_file.setframerate(44100)
+            wav_file.writeframes(resp.audio)
+        
+        print(f"--- NVIDIA Riva TTS (Leo) wrote audio to {os.path.basename(output_path)} ---")
+        return True
+        
+    except Exception as e:
+        print(f"  NVIDIA TTS failed: {e}, falling back to Edge-TTS")
+        if os.path.exists(output_path):
+            os.remove(output_path)
+        return False
+
 async def _generate_tts_audio(text: str, voice: str, output_path: str):
     """Async helper function to generate audio using edge-tts with better error handling."""
     try:
@@ -15,12 +64,10 @@ async def _generate_tts_audio(text: str, voice: str, output_path: str):
         await communicate.save(output_path)
         print(f"--- Edge-TTS successfully wrote audio to {os.path.basename(output_path)} ---")
     except Exception as e:
-        # This will now catch any error during the TTS generation and save process.
         print(f"!!! CRITICAL ERROR in Edge-TTS: {e} !!!")
-        # Ensure a failed generation doesn't leave behind an empty/corrupt file.
         if os.path.exists(output_path):
             os.remove(output_path)
-        raise  # Re-raise the exception so the main function knows it failed.
+        raise
 
 def _wait_for_file_and_load(path: str, timeout: int = 60) -> AudioFileClip | None:
     """Waits patiently for a file to be fully written and stable before loading it."""
@@ -56,55 +103,68 @@ def _wait_for_file_and_load(path: str, timeout: int = 60) -> AudioFileClip | Non
 
 
 def text_to_speech_sentences(script: str, title: str) -> list[dict] | None:
-    """Generates audio for simple sentences (like the title) using Edge-TTS."""
-    print("--- Generating Title Audio with Edge-TTS ---")
-    safe_title = re.sub(r'[<>:"/\\|?*]', '', title).replace(' ', '_')[:20]
-    output_filename = f"{safe_title}_title.mp3"
-    output_path = os.path.join(config.ASSETS_DIR, output_filename)
-
-    try:
-        asyncio.run(_generate_tts_audio(script, config.EDGE_TTS_VOICE, output_path))
-        
-        audio_clip = _wait_for_file_and_load(output_path)
-        if not audio_clip:
-            raise IOError("Failed to load generated title audio.")
-
-        clip_info = [{
-            "text": script,
-            "audio_path": output_path,
-            "duration": audio_clip.duration
-        }]
-        audio_clip.close()
-        return clip_info
-        
-    except Exception as e:
-        print(f"An error occurred during Edge-TTS generation for title: {e}")
-        return None
-
-def generate_audio_with_word_timestamps(script: str, title: str) -> dict | None:
-    """(REWRITTEN FOR MAXIMUM STABILITY)"""
-    print("--- Generating Audio with Edge-TTS ---")
+    """Generates audio for simple sentences (like the title)."""
     safe_title = re.sub(r'[<>:"/\\|?*]', '', title).replace(' ', '_')[:20]
     
-    mp3_output_path = os.path.join(config.ASSETS_DIR, f"{safe_title}_full_story.mp3")
+    # Try NVIDIA first
+    wav_path = os.path.join(config.ASSETS_DIR, f"{safe_title}_title.wav")
+    print("--- Generating Title Audio (trying NVIDIA Riva) ---")
+    
+    if _generate_nvidia_tts(script, wav_path):
+        output_path = wav_path
+    else:
+        # Fallback to Edge-TTS
+        print("--- Generating Title Audio with Edge-TTS ---")
+        output_path = os.path.join(config.ASSETS_DIR, f"{safe_title}_title.mp3")
+        try:
+            asyncio.run(_generate_tts_audio(script, config.EDGE_TTS_VOICE, output_path))
+        except Exception as e:
+            print(f"An error occurred during Edge-TTS generation for title: {e}")
+            return None
+
+    audio_clip = _wait_for_file_and_load(output_path)
+    if not audio_clip:
+        return None
+
+    clip_info = [{
+        "text": script,
+        "audio_path": output_path,
+        "duration": audio_clip.duration
+    }]
+    audio_clip.close()
+    return clip_info
+
+
+def generate_audio_with_word_timestamps(script: str, title: str) -> dict | None:
+    """Generate narration audio with word-level timestamps."""
+    safe_title = re.sub(r'[<>:"/\\|?*]', '', title).replace(' ', '_')[:20]
+    
     wav_output_path = os.path.join(config.ASSETS_DIR, f"{safe_title}_full_story.wav")
+    mp3_output_path = os.path.join(config.ASSETS_DIR, f"{safe_title}_full_story.mp3")
+    audio_for_video = None  # path used for final video
 
     try:
-        # Step 1: Generate the initial MP3 audio file. The new error handling inside
-        # _generate_tts_audio will catch any failures here.
-        asyncio.run(_generate_tts_audio(script, config.EDGE_TTS_VOICE, mp3_output_path))
+        # Try NVIDIA Riva first (outputs WAV directly — no conversion needed)
+        print("--- Generating Story Audio (trying NVIDIA Riva) ---")
+        if _generate_nvidia_tts(script, wav_output_path):
+            audio_for_video = wav_output_path
+        else:
+            # Fallback to Edge-TTS
+            print("--- Generating Story Audio with Edge-TTS ---")
+            asyncio.run(_generate_tts_audio(script, config.EDGE_TTS_VOICE, mp3_output_path))
+            
+            print(f"--- Sanitizing audio by converting to WAV format ---")
+            mp3_clip = _wait_for_file_and_load(mp3_output_path)
+            if not mp3_clip:
+                raise IOError("Failed to load generated MP3 for WAV conversion.")
+            
+            mp3_clip.write_audiofile(wav_output_path, codec='pcm_s16le')
+            mp3_clip.close()
+            audio_for_video = mp3_output_path
         
-        # Step 2: Use the robust helper to wait for the MP3 and load it
-        print(f"--- Sanitizing audio by converting to WAV format ---")
-        mp3_clip = _wait_for_file_and_load(mp3_output_path)
-        if not mp3_clip:
-            raise IOError("Failed to load generated MP3 for WAV conversion.")
-        
-        mp3_clip.write_audiofile(wav_output_path, codec='pcm_s16le')
-        mp3_clip.close()
-        print(f"Sanitized WAV file saved at: {wav_output_path}")
+        print(f"WAV file ready at: {wav_output_path}")
 
-        # Step 3: Use Whisper on the clean WAV file
+        # Whisper timestamps on the WAV
         print("--- Analyzing audio for precise word timestamps with Whisper ---")
         audio = whisper.load_audio(wav_output_path)
         model = whisper.load_model("tiny", device="cpu") 
@@ -123,7 +183,7 @@ def generate_audio_with_word_timestamps(script: str, title: str) -> dict | None:
             raise ValueError("Whisper could not detect any words in the audio.")
 
         print(f"Generated precise timestamps for {len(word_timestamps)} words.")
-        return {"audio_path": mp3_output_path, "word_timestamps": word_timestamps}
+        return {"audio_path": audio_for_video or wav_output_path, "word_timestamps": word_timestamps}
 
     except Exception as e:
         print(f"An error occurred during audio generation or timestamping: {e}")
