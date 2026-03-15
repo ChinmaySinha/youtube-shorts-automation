@@ -1,4 +1,4 @@
-from groq import Groq
+from .tools.llm_client import chat_completion, SEO_PARAMS
 import random
 from . import config
 from .tools import youtube_tools
@@ -17,10 +17,6 @@ def generate_seo_metadata(topic: str, content_category: str = "AITA") -> dict:
     - Cross-platform tags boost multi-platform discovery
     """
     print("--- Generating Shorts-Optimized SEO Metadata ---")
-    if not config.GROQ_API_KEY:
-        return {"error": "GROQ_API_KEY is not configured."}
-
-    client = Groq(api_key=config.GROQ_API_KEY)
 
     # Get category-specific hashtags
     category_tags = config.SHORTS_CATEGORY_HASHTAGS.get(
@@ -63,12 +59,13 @@ def generate_seo_metadata(topic: str, content_category: str = "AITA") -> dict:
     """
 
     try:
-        chat_completion = client.chat.completions.create(
+        response_text = chat_completion(
             messages=[{"role": "user", "content": prompt}],
-            model="llama-3.1-8b-instant",
-            temperature=0.7,
+            params=SEO_PARAMS,
+            task="seo_metadata"
         )
-        response_text = chat_completion.choices[0].message.content
+        if not response_text:
+            return {"error": "All LLM providers failed"}
 
         # Parse the response
         title = response_text.split("Title:")[1].split("Description:")[0].strip()

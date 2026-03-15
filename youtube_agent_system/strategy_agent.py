@@ -186,18 +186,18 @@ def _run_openai_prompt(prompt_template: str, prompt_context: str, strategy_name:
     final_prompt = prompt_template.format(prompt_context=prompt_context)
     
     try:
-        client = Groq(api_key=config.GROQ_API_KEY)
-        chat_completion = client.chat.completions.create(
+        from .tools.llm_client import chat_completion, DEFAULT_PARAMS
+        response_text = chat_completion(
             messages=[{"role": "user", "content": final_prompt}],
-            model="openai/gpt-oss-120b",
-            temperature=1.0,
-            top_p=0.95,
+            params=DEFAULT_PARAMS,
+            task=f"script_generation_{strategy_name}"
         )
-        response_text = chat_completion.choices[0].message.content.strip()
-        return _clean_and_parse_response(response_text)
+        if response_text:
+            return _clean_and_parse_response(response_text)
+        return None
     except Exception as e:
         import traceback
-        print(f"An error occurred in OpenAI Strategy {strategy_name}: {e}")
+        print(f"An error occurred in Strategy {strategy_name}: {e}")
         traceback.print_exc()
         return None
 
@@ -301,15 +301,16 @@ The title should be short (<60 chars), hook-y, and make people STOP scrolling.
 """
 
     try:
-        client = Groq(api_key=config.GROQ_API_KEY)
-        chat_completion = client.chat.completions.create(
+        from .tools.llm_client import chat_completion, ADAPTATION_PARAMS
+        response_text = chat_completion(
             messages=[{"role": "user", "content": adaptation_prompt}],
-            model="openai/gpt-oss-120b",
-            temperature=0.7,  # Lower temp for adaptation (stay faithful)
-            top_p=0.95,
+            params=ADAPTATION_PARAMS,
+            task="story_adaptation"
         )
-        response_text = chat_completion.choices[0].message.content.strip()
-        result = _clean_and_parse_response(response_text)
+        if response_text:
+            result = _clean_and_parse_response(response_text)
+        else:
+            result = None
     except Exception as e:
         import traceback
         print(f"Error during story adaptation: {e}")
