@@ -144,17 +144,20 @@ You are a writer for a channel that tells deep, psychologically resonant stories
 
 # --- HELPER FUNCTION FOR TEXT CLEANING (Used by all strategies) ---
 def _clean_and_parse_response(response_text: str) -> dict:
-    """Parses the raw LLM response to extract and clean the script and title."""
+    """Parses the raw LLM response to extract and clean the script, title, and hook line."""
     title_match = re.search(r'Title:\s*(.*)', response_text, re.IGNORECASE)
     script_match = re.search(r'\*\*?Script:\*\*?(.*)', response_text, re.DOTALL | re.IGNORECASE)
+    hook_match = re.search(r'Hook:\s*(.*?)(?:\n|$)', response_text, re.IGNORECASE)
 
     raw_title = title_match.group(1).strip() if title_match else ""
+    raw_hook = hook_match.group(1).strip() if hook_match else ""
     # If script isn't found, assume the whole response is the script
     raw_script = script_match.group(1).strip() if script_match else response_text
 
     def clean_text(text_to_clean):
-        # Remove the other part (Title from script, Script from title)
+        # Remove the other parts
         cleaned = re.sub(r'Title:\s*.*', '', text_to_clean, flags=re.IGNORECASE | re.DOTALL)
+        cleaned = re.sub(r'Hook:\s*.*?\n', '', cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r'\*\*?Script:\*\*?', '', cleaned, flags=re.IGNORECASE)
         # Remove markdown characters
         cleaned = re.sub(r'[`*_~]', '', cleaned)
@@ -162,6 +165,7 @@ def _clean_and_parse_response(response_text: str) -> dict:
 
     title = clean_text(raw_title)
     script = clean_text(raw_script)
+    hook_line = re.sub(r'[`*_~""]', '', raw_hook).strip()
 
     # Fallback logic for invalid titles
     if not title or not re.search('[a-zA-Z]', title):
@@ -171,11 +175,14 @@ def _clean_and_parse_response(response_text: str) -> dict:
             title = (fallback_title[:100] + '...') if len(fallback_title) > 100 else fallback_title
         else:
             title = "AI Generated Story"
-            # Ensure script is not empty if title generation failed completely
             if not script or not re.search('[a-zA-Z]', script):
                 script = "Could not generate a valid script from the AI response."
     
-    return {"script": script, "title": title}
+    result = {"script": script, "title": title}
+    if hook_line:
+        result["hook_line"] = hook_line
+        print(f"  Hook line: \"{hook_line}\"")
+    return result
 
 # --- NEW: GENERIC OPENAI PROMPT RUNNER ---
 def _run_openai_prompt(prompt_template: str, prompt_context: str, strategy_name: str) -> dict | None:
@@ -269,9 +276,9 @@ def _generate_with_intelligence(recent_topics: list[str] = None) -> dict | None:
     print(f"--- Category: {real_story['category']}, Words: {real_story['word_count']} ---")
     
     # === Have the LLM ADAPT the real story for narration ===
-    adaptation_prompt = f"""You are a skilled narrator who adapts real Reddit stories for YouTube Shorts narration.
+    adaptation_prompt = f"""You are an elite YouTube Shorts narrator who turns Reddit stories into viral 60-second videos with millions of views.
 
-**YOUR TASK:** Take the following REAL Reddit story and adapt it into a polished, narration-ready script.
+**YOUR TASK:** Take this REAL Reddit story and transform it into a scroll-stopping YouTube Short.
 
 **THE REAL STORY:**
 Title: {real_story['title']}
@@ -279,25 +286,44 @@ Category: {real_story['category']}
 
 {real_story['body'][:2000]}
 
-**ADAPTATION RULES:**
-1. **Keep the core story INTACT** -- do NOT change the events, characters, or outcome. This is a REAL story.
-2. **First-person narration** -- rewrite in first person ("I") if not already.
-3. **Start with the most dramatic moment** -- your first sentence (max 15 words) must be the hook that grabs attention instantly. Pull the most shocking/dramatic moment to the front.
-4. **Clean up for narration** -- remove Reddit formatting, acronyms (explain them naturally), paragraph breaks, and edit markers. Make it flow as spoken word.
-5. **Keep it {config.SHORTS_MIN_WORDS}-{config.SHORTS_MAX_WORDS} words** -- trim filler, tighten sentences, but preserve all key story beats.
-6. **Conversational tone** -- use contractions (I'm, they're, don't), rhetorical questions, and natural pauses (...).
-7. **Strong ending** -- the final line should be a mic-drop, a twist callback, or an emotional gut-punch.
+**YOU MUST CREATE THREE THINGS:**
+
+### 1. HOOK LINE (displayed as text overlay at video start)
+This is the text that appears ON SCREEN in the first 1-2 seconds. It's what makes someone STOP scrolling. 
+Examples of great hook lines:
+- "This landlord messed with the WRONG tenant"
+- "She thought nobody would find out"
+- "My boss fired me... worst mistake of his life"
+- "POV: your roommate steals your food for the last time"
+- "I caught my neighbor doing THIS to my car"
+Write ONE hook line. Max 10 words. Must create instant curiosity.
+
+### 2. NARRATION SCRIPT
+Adapt the story into a dramatic, first-person narration. JUICE IT UP:
+- **Open with the most shocking moment** — don't build up, SLAM the viewer with drama in the first sentence
+- **Raise the stakes** — emphasize what's at risk, what could go wrong, the tension
+- **Use pacing tricks** — short punchy sentences for drama ("I froze. My blood ran cold."), longer ones for buildup
+- **Add dramatic pauses** — use "..." for tension before reveals
+- **Use power phrases** — "little did they know", "that's when everything changed", "but here's the thing"
+- **Mic-drop ending** — final line must be unforgettable, a twist callback or savage punchline
+- Keep it {config.SHORTS_MIN_WORDS}-{config.SHORTS_MAX_WORDS} words
+- First person, conversational, spoken-word style
+- Keep ALL the real events intact — juice the DELIVERY, not the facts
+
+### 3. VIRAL TITLE
+Short (<60 chars), hook-y, makes someone STOP scrolling. No quotes.
 
 **ABSOLUTELY DO NOT:**
-- Invent new events or details that aren't in the original story
-- Add morals, lessons, or preachy commentary  
+- Invent events that aren't in the original story
+- Add morals, lessons, or preachy commentary
 - Use hashtags, emojis, or production notes
-- Start with "So..." or "Well..." or any generic opener
+- Start the script with "So..." or "Well..." or "Hey guys"
 
-**OUTPUT FORMAT (MANDATORY):**
-Start with `**Script:**`
-After the script, on a new line, write a viral title starting with `Title: `
-The title should be short (<60 chars), hook-y, and make people STOP scrolling.
+**OUTPUT FORMAT (MANDATORY — follow EXACTLY):**
+Hook: [your hook line here]
+**Script:**
+[your narration script here]
+Title: [your viral title here]
 """
 
     try:

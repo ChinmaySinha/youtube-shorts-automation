@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import chromadb
 from . import config
@@ -971,20 +971,20 @@ def get_random_training_story(category: str = None) -> dict | None:
             else:
                 return None
         
-        # Sort by quality score and pick from the TOP stories
+        # Sort by quality score and pick from the BEST stories
         scored_indices = []
         for j in range(len(results['ids'][0])):
             meta = results['metadatas'][0][j] if results.get('metadatas') else {}
             score = meta.get('quality_score', 0)
             wc = meta.get('word_count', 0)
-            # Prefer stories with good scores AND reasonable length
-            if isinstance(score, (int, float)) and wc > 80:
+            # Only high-quality stories with good length
+            if isinstance(score, (int, float)) and score >= 3.0 and wc > 100:
                 scored_indices.append((j, score))
         
         if scored_indices:
-            # Sort by quality score descending, pick randomly from top 10
+            # Sort by quality score descending, pick randomly from top 5
             scored_indices.sort(key=lambda x: x[1], reverse=True)
-            top_n = scored_indices[:min(10, len(scored_indices))]
+            top_n = scored_indices[:min(5, len(scored_indices))]
             idx = random.choice(top_n)[0]
         else:
             idx = random.randint(0, len(results['ids'][0]) - 1)
