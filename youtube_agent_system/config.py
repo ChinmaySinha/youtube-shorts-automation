@@ -109,7 +109,7 @@ EDGE_TTS_VOICE = "en-US-GuyNeural"  # Deep, natural male voice
 VIDEO_WIDTH = 1080
 VIDEO_HEIGHT = 1920
 VIDEO_FPS = 30
-VIDEO_SPEED = 1.5
+VIDEO_SPEED = 1.35
 
 # Text overlay settings
 TEXT_COLOR = "#1FABAB" 
