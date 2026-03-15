@@ -41,39 +41,23 @@ os.system("apt-get update -qq && apt-get install -y -qq ffmpeg > /dev/null 2>&1"
 print("Dependencies installed!")
 
 # ============================================
-# STEP 2: Copy code from Kaggle Dataset
+# STEP 2: Clone the repo (public)
 # ============================================
 print("\n" + "=" * 60)
-print("  STEP 2: Setting up project code")
+print("  STEP 2: Cloning repository")
 print("=" * 60)
 
-WORK_DIR = "/kaggle/working/project"
-CODE_DATASET = "/kaggle/input/youtube-pipeline-code"
+REPO_URL = "https://github.com/ChinmaySinha/youtube-shorts-automation.git"
+WORK_DIR = "/kaggle/working/youtube-shorts-automation"
 agent_dir = os.path.join(WORK_DIR, "youtube_agent_system")
 
-# Copy code from dataset to working dir (datasets are read-only)
 if os.path.exists(WORK_DIR):
-    shutil.rmtree(WORK_DIR)
-
-# The dataset should contain the youtube_agent_system folder
-if os.path.exists(os.path.join(CODE_DATASET, "youtube_agent_system")):
-    os.makedirs(WORK_DIR, exist_ok=True)
-    shutil.copytree(
-        os.path.join(CODE_DATASET, "youtube_agent_system"),
-        agent_dir
-    )
-elif os.path.exists(CODE_DATASET):
-    # Maybe the dataset IS the youtube_agent_system contents directly
-    os.makedirs(WORK_DIR, exist_ok=True)
-    shutil.copytree(CODE_DATASET, agent_dir)
+    subprocess.run(["git", "pull"], cwd=WORK_DIR)
 else:
-    print("ERROR: Dataset 'youtube-pipeline-code' not found!")
-    print("Please add it via: right panel > Add Data > Your Datasets")
-    sys.exit(1)
+    subprocess.run(["git", "clone", REPO_URL, WORK_DIR], check=True)
 
 os.chdir(WORK_DIR)
 print(f"Working directory: {os.getcwd()}")
-print(f"Code files: {os.listdir(agent_dir)[:10]}...")
 
 # ============================================
 # STEP 3: Restore credentials from Kaggle Secrets
@@ -101,6 +85,11 @@ try:
 except:
     gemini_key = ""
 
+try:
+    nvidia_key = secrets.get_secret("NVIDIA_API_KEY")
+except:
+    nvidia_key = ""
+
 # Write .env file
 env_content = f"""# Groq API for Language Model
 GROQ_API_KEY={groq_key}
@@ -116,6 +105,9 @@ ELEVENLABS_API_KEY={elevenlabs_key}
 
 # Gemini API
 GEMINI_API_KEY={gemini_key}
+
+# NVIDIA API (Nemotron LLM + Riva TTS)
+NVIDIA_API_KEY={nvidia_key}
 """
 
 env_path = os.path.join(WORK_DIR, "youtube_agent_system", ".env")
